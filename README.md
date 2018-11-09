@@ -25,38 +25,38 @@ const emptyPerson: Person = {
   {(link, onSubmit) => (
     <ObjectField link={link}>
       {links => (
-        <>
+        <div>
           <Field link={links.name}>
             {(value, errors, onChange, onBlur) => (
-              <>
+              <div>
                 <label>Name:</label>
                 <input type="text" onChange={onChange} onBlur={onBlur} />
-              </>
+              </div>
             )}
           </Field>
           <Field link={links.age}>
             {(value, errors, onChange, onBlur) => (
-              <>
+              <div>
                 <label>Age:</label>
                 <input type="text" onChange={onChange} onBlur={onBlur} />
-              </>
+              </div>
             )}
           </Field>
           <Field link={links.side}>
             {(value, errors, onChange, onBlur) => (
-              <>
+              <div>
                 <label>Side:</label>
                 <select onChange={onChange} onBlur={onBlur} value={value}>
                   <option value="Empire">Empire</option>
                   <option value="Rebels">Rebels</option>
                 </select>
-              </>
+              </div>
             )}
           </Field>
           <div>
             <button onClick={onSubmit}>Submit</button>
           </div>
-        </>
+        </div>
       )}
     </ObjectField>
   )}
@@ -92,14 +92,14 @@ function noEmptyStrings(s: string): Array<string> {
 
 <Field link={link} validation={noEmptyStrings}>
   {(value, errors, onChange, onBlur)} => (
-  <>
+  <div>
     <input type="text" value={value} />
     <ul class="input_errors">
       {errors.map(error => (
         <li>{error}</li>
       ))}
     </ul>
-  </>
+  </div>
   )}
 </Field>;
 ```
@@ -166,13 +166,13 @@ const emptyPerson = {
   {(link, onSubmit) => (
     <ObjectField link={link}>
       {links => (
-        <>
+        <div>
           <Field link={links.name}>
             {(value, errors, onChange, onBlur) => (
-              <>
+              <div>
                 <label>Name:</label>
                 <input type="text" onChange={onChange} onBlur={onBlur} />
-              </>
+              </div>
             )}
           </Field>
           <ArrayField link={links.pets}>
@@ -207,7 +207,7 @@ const emptyPerson = {
           <div>
             <button onClick={onSubmit}>Submit</button>
           </div>
-        </>
+        </div>
       )}
     </ObjectField>
   )}
@@ -262,17 +262,17 @@ could be used in this form:
 ```jsx
 <Form serverErrors={serverErrors}>
   ({(link, handleSubmit)}) => (
-  <>
+  <div>
     <ObjectField link={link}>
       {links => (
-        <>
+        <div>
           <StringField link={links.name} />
           <StringField link={links.email} />
-        </>
+        </div>
       )}
     </ObjectField>
     <button onClick={handleSubmit}>Submit</button>
-  </>
+  </div>
   )}
 </Form>
 ```
@@ -298,7 +298,7 @@ An example of how these data could be used:
 ```jsx
 <Form onSubmit={handleSubmit}>
   ({(link, handleSubmit, {valid})}) => (
-  <>
+  <div>
     <Field link={link}>
       {(value, errors, onChange, onBlur, {changed}) => (
         <label>
@@ -316,7 +316,7 @@ An example of how these data could be used:
     <button disabled={!valid} onClick={() => handleSubmit()}>
       Submit
     </button>
-  </>
+  </div>
   )}
 </Form>
 ```
@@ -338,13 +338,13 @@ function handleSubmit(value: User, saveOrSubmit: "save" | "submit") {
 
 <Form onSubmit={handleSubmit}>
   ({(link, handleSubmit)}) => (
-  <>
+  <div>
     <UserField link={link} />
     <div>
       <button onClick={() => handleSubmit("save")}>Save</button>
       <button onClick={() => handleSubmit("submit")}>Submit</button>
     </div>
-  </>
+  </div>
   )}
 </Form>;
 ```
