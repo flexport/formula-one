@@ -35,11 +35,25 @@ export type FormContextPayload = {
   pristine: boolean,
   submitted: boolean,
 };
+
 export const FormContext: React.Context<FormContextPayload> = React.createContext({
   shouldShowError: () => true,
   pristine: false,
   submitted: true,
 });
+
+const handleFeedbackStrategy = (
+  feedbackStrategy: FeedbackStrategy | $ReadOnlyArray<FeedbackStrategy>,
+  metaForm: MetaForm,
+  metaField: MetaField
+): boolean => {
+
+  if (Array.isArray(feedbackStrategy)) {
+    return feedbackStrategy.some((strategy => strategy(metaForm, metaField)));
+  }
+
+  return feedbackStrategy(metaForm, metaField);
+}
 
 function applyExternalErrorsToFormState<T>(
   externalErrors: null | {[path: string]: Array<string>},
@@ -95,7 +109,7 @@ function applyExternalErrorsToFormState<T>(
 type Props<T, ExtraSubmitData> = {|
   // This is *only* used to intialize the form. Further changes will be ignored
   +initialValue: T,
-  +feedbackStrategy: FeedbackStrategy,
+  +feedbackStrategy: FeedbackStrategy | $ReadOnlyArray<FeedbackStrategy>,
   +onSubmit: (T, ExtraSubmitData) => void,
   +onChange: T => void,
   +onValidation: boolean => void,
@@ -116,7 +130,7 @@ type State<T> = {
 
 export default class Form<T, ExtraSubmitData> extends React.Component<
   Props<T, ExtraSubmitData>,
-  State<T>
+  State<T>,
 > {
   static defaultProps = {
     onChange: () => {},
@@ -212,6 +226,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   };
 
   render() {
+    const {feedbackStrategy} = this.props;
     const {formState} = this.state;
     const metaForm = {
       pristine: this.state.pristine,
@@ -221,7 +236,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     return (
       <FormContext.Provider
         value={{
-          shouldShowError: this.props.feedbackStrategy.bind(null, metaForm),
+          shouldShowError: handleFeedbackStrategy.bind(null, feedbackStrategy, metaForm),
           ...metaForm,
         }}
       >
@@ -236,9 +251,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
           {
             touched: getExtras(formState).meta.touched,
             changed: getExtras(formState).meta.changed,
-            shouldShowErrors: this.props.feedbackStrategy(
+            shouldShowErrors: handleFeedbackStrategy(
+              feedbackStrategy,
               metaForm,
-              getExtras(formState).meta
+              getExtras(formState).meta,
             ),
             unfilteredErrors: flatRootErrors(formState),
             asyncValidationInFlight: false, // no validations on Form
