@@ -106,7 +106,7 @@ function noEmptyStrings(s: string): Array<string> {
 
 ### When to show errors
 
-In addition to tracking errors and validating when inputs change, **formula-one** tracks metadata to help you decide whether you should show errors to your user. `<Form>` allows you to specify a strategy for when to show errors.
+In addition to tracking errors and validating when inputs change, **formula-one** tracks metadata to help you decide whether you should show errors to your user. `<Form>` allows you to specify a strategy or an array of strategies for when to show errors.
 
 Some base strategies are exported as fields on the `FeedbackStrategies` object. Here is a table of the strategies and their behavior.
 
@@ -118,14 +118,6 @@ Some base strategies are exported as fields on the `FeedbackStrategies` object. 
 | `FeedbackStrategies.ClientValidationSucceeded` | Show errors for fields which have had their validations pass at any time in the past |
 | `FeedbackStrategies.Pristine`                  | Show errors when the form has not been modified                                      |
 | `FeedbackStrategies.Submitted`                 | Show errors after the form has been submitted                                        |
-
-These simple strategies can be combined by using the `and`, `or`, and `not` functions also on the `FeedbackStrategies` object, as follows:
-
-```js
-import {FeedbackStrategies} from "formula-one";
-const {Changed, Submitted, or} = FeedbackStrategies;
-const myStrategy = or(Changed, Submitted);
-```
 
 ### Multiple validations for a single `<Field>`
 

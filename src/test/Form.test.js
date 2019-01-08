@@ -534,6 +534,23 @@ describe("Form", () => {
     );
   });
 
+  it("accepts multiple feedback strategies", () => {
+    const renderFn = jest.fn(() => null);
+    TestRenderer.create(
+      <Form
+        initialValue={1}
+        feedbackStrategy={[FeedbackStrategies.Changed, FeedbackStrategies.Pristine]}
+        externalErrors={{"/": ["External error", "Another external error"]}}
+      >
+        {renderFn}
+      </Form>
+    );
+
+    const link = renderFn.mock.calls[0][0];
+    expect(link.formState[1].data.errors.external)
+      .toBe(["External error", "Another external error"]);
+  });
+
   it("Calls onChange when the value is changed", () => {
     const onChange = jest.fn();
     const renderFn = jest.fn(() => null);
