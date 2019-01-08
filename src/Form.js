@@ -26,7 +26,7 @@ import {
   mapShapedTree,
 } from "./shapedTree";
 import {pathFromPathString} from "./tree";
-import {type FeedbackStrategy} from "./feedbackStrategies";
+import strategies, {type FeedbackStrategy} from "./feedbackStrategies";
 
 export type FormContextPayload = {
   shouldShowError: (metaField: MetaField) => boolean,
@@ -43,11 +43,10 @@ export const FormContext: React.Context<FormContextPayload> = React.createContex
 });
 
 const handleFeedbackStrategy = (
-  feedbackStrategy: FeedbackStrategy | $ReadOnlyArray<FeedbackStrategy>,
+  feedbackStrategy?: FeedbackStrategy | $ReadOnlyArray<FeedbackStrategy>,
   metaForm: MetaForm,
   metaField: MetaField
 ): boolean => {
-
   if (Array.isArray(feedbackStrategy)) {
     return feedbackStrategy.some((strategy => strategy(metaForm, metaField)));
   }
@@ -133,6 +132,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   State<T>,
 > {
   static defaultProps = {
+    feedbackStrategies: strategies.Always,
     onChange: () => {},
     onSubmit: () => {},
     onValidation: () => {},
