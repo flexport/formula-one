@@ -1,11 +1,6 @@
 // @flow
 
-import FeedbackStrategies, {
-  type FeedbackStrategy,
-  and,
-  or,
-  not,
-} from "../feedbackStrategies";
+import FeedbackStrategies from "../feedbackStrategies";
 
 describe("feedbackStrategies", () => {
   describe("provided strategies", () => {
@@ -71,41 +66,6 @@ describe("feedbackStrategies", () => {
       it("returns false when the form is not submitted", () => {
         // $FlowFixMe
         expect(FeedbackStrategies.Submitted({submitted: false})).toBe(false);
-      });
-    });
-  });
-
-  describe("combining strategies", () => {
-    const t: FeedbackStrategy = () => true;
-    const f: FeedbackStrategy = () => false;
-
-    function callStrategy(strategy: FeedbackStrategy) {
-      // $FlowFixMe
-      return strategy();
-    }
-
-    describe("and()", () => {
-      it("behaves like boolean conjunction", () => {
-        expect(callStrategy(and(t, t))).toBe(true);
-        expect(callStrategy(and(t, f))).toBe(false);
-        expect(callStrategy(and(f, t))).toBe(false);
-        expect(callStrategy(and(f, f))).toBe(false);
-      });
-    });
-
-    describe("or()", () => {
-      it("behaves like boolean disjunction", () => {
-        expect(callStrategy(or(t, t))).toBe(true);
-        expect(callStrategy(or(t, f))).toBe(true);
-        expect(callStrategy(or(f, t))).toBe(true);
-        expect(callStrategy(or(f, f))).toBe(false);
-      });
-    });
-
-    describe("not()", () => {
-      it("behaves like boolean negation", () => {
-        expect(callStrategy(not(t))).toBe(false);
-        expect(callStrategy(not(f))).toBe(true);
       });
     });
   });
