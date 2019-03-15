@@ -74,10 +74,12 @@ function applyServerErrorsToFormState<T>(
           tree
         );
       } else {
+        let valueStr = JSON.stringify(value);
+        if (valueStr === undefined) {
+          valueStr = "undefined";
+        }
         console.error(
-          `Warning: couldn't match error with path ${key} to value ${JSON.stringify(
-            value
-          )}`
+          `Warning: couldn't match error with path ${key} to value ${valueStr}`
         );
       }
     });

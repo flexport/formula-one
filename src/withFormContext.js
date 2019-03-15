@@ -31,7 +31,6 @@ export default function withFormContext<
             <Component
               {...otherProps}
               formContext={formContext}
-              // $FlowFixMe I don't understand why you are complaining, Flow
               ref={forwardedRef}
             />
           )}
