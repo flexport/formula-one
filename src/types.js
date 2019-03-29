@@ -1,6 +1,7 @@
 // @flow strict
 
 import type {ShapedTree, ShapedPath} from "./shapedTree";
+import type {Path} from "./tree";
 import {type FormState} from "./formState";
 
 export type ClientErrors = Array<string> | "pending";
@@ -59,6 +60,7 @@ export type FieldLink<T> = {|
   +onChange: OnChange<T>,
   +onBlur: OnBlur<T>,
   +onValidation: OnValidation<T>,
+  +path: Path,
 |};
 
 export type Validation<T> = T => Array<string>;

@@ -43,6 +43,7 @@ import {
   isValid,
   changedFormState,
 } from "./formState";
+import type {Path} from "./tree";
 
 type ToFieldLink = <T>(T) => FieldLink<T>;
 type Links<E> = Array<$Call<ToFieldLink, E>>;
@@ -71,6 +72,7 @@ type Props<E> = {|
 |};
 
 function makeLinks<E>(
+  path: Path,
   formState: FormState<Array<E>>,
   onChildChange: (number, FormState<E>) => void,
   onChildBlur: (number, ShapedTree<E, Extras>) => void,
@@ -89,25 +91,20 @@ function makeLinks<E>(
       onValidation: (childPath, clientErrors) => {
         onChildValidation(i, childPath, clientErrors);
       },
+      path: [...path, {type: "array", index: i}],
     };
   });
 }
 
-type State = {|
-  nonce: number,
-|};
-
-export default class ArrayField<E> extends React.Component<Props<E>, State> {
+export default class ArrayField<E> extends React.Component<Props<E>, void> {
   static defaultProps = {
     validation: () => [],
   };
   static contextType = FormContext;
 
-  state = {
-    nonce: 0,
-  };
+  unregisterValidation = () => {};
 
-  initialValidate() {
+  _initialValidate() {
     const {
       link: {formState, onValidation},
       validation,
@@ -121,11 +118,16 @@ export default class ArrayField<E> extends React.Component<Props<E>, State> {
   }
 
   componentDidMount() {
-    this.initialValidate();
+    this.unregisterValidation = this.context.registerValidation(
+      this.props.link.path,
+      this.props.validation
+    );
+
+    this._initialValidate();
   }
 
-  forceChildRemount() {
-    this.setState(({nonce}) => ({nonce: nonce + 1}));
+  componentWillUnmount() {
+    this.unregisterValidation();
   }
 
   _handleChildChange: (number, FormState<E>) => void = (
@@ -144,23 +146,22 @@ export default class ArrayField<E> extends React.Component<Props<E>, State> {
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
-    let nextFormState: FormState<Array<E>>;
+    let validatedFormState: FormState<Array<E>>;
     if (customValue) {
       // Create a fresh form state for the new value.
       // TODO(zach): It's kind of gross that this is happening outside of Form.
-      nextFormState = changedFormState(customValue);
+      const nextFormState = changedFormState(customValue);
+
+      // Sibling nodes changed, so validate the entire subtree.
+      validatedFormState = this.context.validateFormStateAtPath(
+        this.props.link.path,
+        nextFormState
+      );
     } else {
-      nextFormState = newFormState;
+      const nextFormState = setChanged(newFormState);
+      validatedFormState = validate(this.props.validation, nextFormState);
     }
-
-    this.props.link.onChange(
-      setChanged(validate(this.props.validation, nextFormState))
-    );
-
-    // Need to remount children so they will run validations
-    if (customValue) {
-      this.forceChildRemount();
-    }
+    this.props.link.onChange(validatedFormState);
   };
 
   _handleChildBlur: (number, ShapedTree<E, Extras>) => void = (
@@ -346,17 +347,18 @@ export default class ArrayField<E> extends React.Component<Props<E>, State> {
   };
 
   render() {
-    const {formState} = this.props.link;
+    const {formState, path} = this.props.link;
     const {shouldShowError} = this.context;
 
     const links = makeLinks(
+      path,
       formState,
       this._handleChildChange,
       this._handleChildBlur,
       this._handleChildValidation
     );
     return (
-      <React.Fragment key={this.state.nonce}>
+      <React.Fragment>
         {this.props.children(
           links,
           {

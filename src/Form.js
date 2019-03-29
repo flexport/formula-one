@@ -1,6 +1,7 @@
 // @flow strict
 
 import * as React from "react";
+import invariant from "./utils/invariant";
 
 import type {
   MetaField,
@@ -25,7 +26,7 @@ import {
   updateAtPath,
   mapShapedTree,
 } from "./shapedTree";
-import {pathFromPathString} from "./tree";
+import {pathFromPathString, type Path} from "./tree";
 import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
 
 export type FormContextPayload = {
@@ -34,12 +35,16 @@ export type FormContextPayload = {
   // available in their raw form, for convenience.
   pristine: boolean,
   submitted: boolean,
+  registerValidation: (path: Path, fn: (mixed) => Array<string>) => () => void,
+  validateFormStateAtPath: (Path, FormState<*>) => FormState<*>,
 };
 export const FormContext: React.Context<FormContextPayload> = React.createContext(
   {
     shouldShowError: () => true,
     pristine: false,
     submitted: true,
+    registerValidation: () => () => {},
+    validateFormStateAtPath: (path, x) => x,
   }
 );
 
@@ -96,6 +101,98 @@ function applyServerErrorsToFormState<T>(
   return [value, tree];
 }
 
+// STOP(dmnd): Unit tests, perhaps combine with existing implementation?
+type EncodedPath = string;
+
+function encodePath(path: Path): EncodedPath {
+  return (
+    "/" +
+    path
+      .map(p => {
+        if (p.type === "object") {
+          return `o>${p.key}`;
+        } else if (p.type === "array") {
+          return `a>${p.index}`;
+        } else {
+          throw new Error(`Bad path type ${p.type}`);
+        }
+      })
+      .join("/")
+  );
+}
+
+function decodePath(s: EncodedPath): Path {
+  return s
+    .split("/")
+    .filter(x => x !== "")
+    .map(s => {
+      const [type, val] = s.split(">");
+      if (type === "o") {
+        return {type: "object", key: val};
+      } else if (type === "a") {
+        return {type: "array", index: parseInt(val, 10)};
+      } else {
+        throw new Error(`Bad encoded path type '${type}' for path '${s}'`);
+      }
+    });
+}
+
+function getValueAtPath(
+  path: Path,
+  value: mixed | number | string | null | void
+) {
+  if (path.length === 0) {
+    return value;
+  }
+  const [p, ...rest] = path;
+  if (p.type === "array") {
+    invariant(
+      Array.isArray(value),
+      "Path/value shape mismatch: expected array"
+    );
+    return getValueAtPath(rest, value[p.index]);
+  } else if (p.type === "object") {
+    invariant(
+      typeof value === "object" && value !== null,
+      "Path/value shape mismatch: expected object"
+    );
+    return getValueAtPath(rest, value[p.key]);
+  }
+  throw new Error("Path is too long");
+}
+
+function validateSubtree<T>(
+  subtreePath: Path,
+  formState: FormState<T>,
+  validations: Map<string, (mixed) => Array<string>>
+): FormState<T> {
+  const newTree = [...validations.entries()]
+    .filter(([path]) => path.startsWith(encodePath(subtreePath)))
+    .map(([path, validation]) => {
+      const parsedPath = decodePath(path);
+      const val = getValueAtPath(parsedPath, formState[0]);
+      const errors = validation(val);
+      return [parsedPath, errors];
+    })
+    .reduce(
+      (tree, [path, newErrors]) =>
+        updateAtPath(
+          path,
+          ({errors, meta}) => ({
+            errors: {...errors, client: newErrors},
+            meta: {
+              ...meta,
+              succeeded: meta.succeeded || newErrors.length === 0,
+            },
+          }),
+          tree
+        ),
+      formState[1]
+    );
+
+  return [formState[0], newTree];
+}
+
 type Props<T, ExtraSubmitData> = {|
   // This is *only* used to intialize the form. Further changes will be ignored
   +initialValue: T,
@@ -133,20 +230,24 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     state: State<T>
   ) {
     if (props.serverErrors !== state.oldServerErrors) {
-      const newFormState = applyServerErrorsToFormState<T>(
+      const newTree = applyServerErrorsToFormState<T>(
         props.serverErrors,
         state.formState
       );
       return {
-        formState: newFormState,
+        formState: newTree,
         oldServerErrors: props.serverErrors,
       };
     }
     return null;
   }
 
+  validations: Map<EncodedPath, <T>(T) => Array<string>>;
+
   constructor(props: Props<T, ExtraSubmitData>) {
     super(props);
+
+    this.validations = new Map();
 
     const formState = applyServerErrorsToFormState(
       props.serverErrors,
@@ -158,6 +259,14 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
       submitted: false,
       oldServerErrors: props.serverErrors,
     };
+  }
+
+  componentDidMount() {
+    // Take care to use an updater to avoid clobbering changes from fields that
+    // call onChange during cDM.
+    this.setState(prevState => ({
+      formState: validateSubtree([], prevState.formState, this.validations),
+    }));
   }
 
   // Public API: submit from the outside
@@ -214,6 +323,17 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     );
   };
 
+  handleRegisterValidation = (path: Path, fn: mixed => Array<string>) => {
+    const encodedPath = encodePath(path);
+    this.validations.set(encodedPath, fn);
+
+    // TODO(dmnd): Remove errors (or just revalidate?) when this happens to make
+    // sure an error doesn't stick around
+    return () => {
+      this.validations.delete(encodedPath);
+    };
+  };
+
   render() {
     const {formState} = this.state;
     const metaForm = {
@@ -225,6 +345,9 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
       <FormContext.Provider
         value={{
           shouldShowError: this.props.feedbackStrategy.bind(null, metaForm),
+          registerValidation: this.handleRegisterValidation,
+          validateFormStateAtPath: (path, formState) =>
+            validateSubtree(path, formState, this.validations),
           ...metaForm,
         }}
       >
@@ -234,6 +357,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
             onChange: this._handleChange,
             onBlur: this._handleBlur,
             onValidation: this._handleValidation,
+            path: [],
           },
           this._handleSubmit,
           {

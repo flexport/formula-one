@@ -41,7 +41,9 @@ export default class Field<T> extends React.Component<Props<T>> {
   };
   static contextType = FormContext;
 
-  initialValidate() {
+  unregisterValidation = () => {};
+
+  _initialValidate() {
     const {
       link: {formState, onValidation},
       validation,
@@ -55,7 +57,16 @@ export default class Field<T> extends React.Component<Props<T>> {
   }
 
   componentDidMount() {
-    this.initialValidate();
+    this.unregisterValidation = this.context.registerValidation(
+      this.props.link.path,
+      this.props.validation
+    );
+
+    this._initialValidate();
+  }
+
+  componentWillUnmount() {
+    this.unregisterValidation();
   }
 
   onChange: T => void = (newValue: T) => {

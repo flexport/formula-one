@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
+import {FormContext} from "../Form";
+import FeedbackStrategies from "../feedbackStrategies";
 import ArrayField from "../ArrayField";
 import {type FieldLink} from "../types";
 import TestField, {TestInput} from "./TestField";
@@ -23,6 +25,33 @@ describe("ArrayField", () => {
         <ArrayField link={link} validation={(_e: Array<string>) => []}>
           {() => null}
         </ArrayField>;
+      });
+
+      it("Registers and unregisters for validation", () => {
+        const formState = mockFormState([]);
+        const link = mockLink(formState);
+        const unregister = jest.fn();
+        const registerValidation = jest.fn(() => unregister);
+
+        const renderer = TestRenderer.create(
+          <FormContext.Provider
+            value={{
+              shouldShowError: FeedbackStrategies.Always,
+              registerValidation,
+              validateFormStateAtPath: jest.fn(),
+              pristine: true,
+              submitted: false,
+            }}
+          >
+            <ArrayField link={link} validation={jest.fn(() => [])}>
+              {jest.fn(() => null)}
+            </ArrayField>
+          </FormContext.Provider>
+        );
+
+        expect(registerValidation).toBeCalledTimes(1);
+        renderer.unmount();
+        expect(unregister).toBeCalledTimes(1);
       });
 
       it("Sets errors.client and meta.succeeded when there are no errors", () => {
@@ -499,12 +528,15 @@ describe("ArrayField", () => {
   });
 
   describe("customChange", () => {
-    it("allows the default change behavior to be overwritten with customChange", () => {
+    it("allows sibling fields to be overwritten", () => {
       const formStateInner = ["one", "two", "three"];
       const formState = mockFormState(formStateInner);
       const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
       const validation = jest.fn(() => ["This is an error"]);
+      const validateFormStateAtPath = jest.fn(
+        (_subtreePath, formState) => formState
+      );
 
       const customChange = jest.fn((_oldValue, _newValue) => [
         "uno",
@@ -513,13 +545,23 @@ describe("ArrayField", () => {
       ]);
 
       TestRenderer.create(
-        <ArrayField
-          link={link}
-          validation={validation}
-          customChange={customChange}
+        <FormContext.Provider
+          value={{
+            shouldShowError: FeedbackStrategies.Always,
+            registerValidation: jest.fn(),
+            validateFormStateAtPath,
+            pristine: true,
+            submitted: false,
+          }}
         >
-          {renderFn}
-        </ArrayField>
+          <ArrayField
+            link={link}
+            validation={validation}
+            customChange={customChange}
+          >
+            {renderFn}
+          </ArrayField>
+        </FormContext.Provider>
       );
 
       const arrayLinks = renderFn.mock.calls[0][0];
@@ -542,8 +584,12 @@ describe("ArrayField", () => {
       ]);
 
       // Validated the result of customChange
-      expect(validation).toHaveBeenCalledTimes(2);
-      expect(validation.mock.calls[1][0]).toEqual(["uno", "dos", "tres"]);
+      // TODO(dmnd): Remove this as it's about validation?
+      expect(validateFormStateAtPath).toHaveBeenCalledTimes(1);
+      expect(validateFormStateAtPath).toHaveBeenCalledWith(
+        [], // The ArrayField is at the root, so empty path
+        [["uno", "dos", "tres"], expect.anything()]
+      );
     });
 
     it("can return null to signal there was no custom change", () => {
@@ -588,27 +634,39 @@ describe("ArrayField", () => {
       const formStateInner = ["one", "two", "three"];
       const formState = mockFormState(formStateInner);
       const link = mockLink(formState);
-
+      const validateFormStateAtPath = jest.fn(
+        (_subtreePath, formState) => formState
+      );
       const customChange = jest.fn((_oldValue, _newValue) => ["1", "2"]);
 
       const childValidation = jest.fn(() => ["This is an error"]);
 
       const renderer = TestRenderer.create(
-        <ArrayField link={link} customChange={customChange}>
-          {links => (
-            <React.Fragment>
-              {links.map((link, i) => (
-                <TestField key={i} link={link} validation={childValidation} />
-              ))}
-            </React.Fragment>
-          )}
-        </ArrayField>
+        <FormContext.Provider
+          value={{
+            shouldShowError: FeedbackStrategies.Always,
+            registerValidation: jest.fn(),
+            validateFormStateAtPath,
+            pristine: true,
+            submitted: false,
+          }}
+        >
+          <ArrayField link={link} customChange={customChange}>
+            {links => (
+              <React.Fragment>
+                {links.map((link, i) => (
+                  <TestField key={i} link={link} validation={childValidation} />
+                ))}
+              </React.Fragment>
+            )}
+          </ArrayField>
+        </FormContext.Provider>
       );
 
       // 6 validations:
       // 1) Child initial validation x3
       // 2) Parent initial validation
-      // 3) Child validation on remount x3
+      // 3) Subtree upon customChange
       // (No parent onValidation call, because it will use onChange)
 
       // 1) and 2)
@@ -619,77 +677,11 @@ describe("ArrayField", () => {
       inner.instance.change("zach");
 
       // 3)
-      expect(link.onValidation).toHaveBeenCalledTimes(3);
-      expect(link.onValidation).toHaveBeenCalledWith(
-        [{type: "array", index: 0}],
-        ["This is an error"]
+      expect(validateFormStateAtPath).toHaveBeenCalledTimes(1);
+      expect(validateFormStateAtPath).toHaveBeenCalledWith(
+        [], // The Array is at the root, so empty path
+        [["1", "2"], expect.anything()]
       );
-      expect(link.onValidation).toHaveBeenCalledWith(
-        [{type: "array", index: 1}],
-        ["This is an error"]
-      );
-      // NOTE(zach): This may be surprising since there are only two values in
-      //   the new value, but there is no guarantee that the next commit will
-      //   have occurred yet.
-      expect(link.onValidation).toHaveBeenCalledWith(
-        [{type: "array", index: 2}],
-        ["This is an error"]
-      );
-
-      // onChange should be called with the result of customChange
-      expect(link.onChange).toHaveBeenCalledTimes(1);
-      expect(link.onChange).toHaveBeenCalledWith([
-        ["1", "2"],
-        {
-          type: "array",
-          data: {
-            errors: {
-              client: [],
-              server: "unchecked",
-            },
-            meta: {
-              touched: true,
-              changed: true,
-              succeeded: true,
-              asyncValidationInFlight: false,
-            },
-          },
-          children: [
-            {
-              type: "leaf",
-              data: {
-                errors: {
-                  // Validations happen after the initial onchange
-                  client: "pending",
-                  server: "unchecked",
-                },
-                meta: {
-                  touched: true,
-                  changed: true,
-                  succeeded: false,
-                  asyncValidationInFlight: false,
-                },
-              },
-            },
-            {
-              type: "leaf",
-              data: {
-                errors: {
-                  // Validations happen after the initial onchange
-                  client: "pending",
-                  server: "unchecked",
-                },
-                meta: {
-                  touched: true,
-                  changed: true,
-                  succeeded: false,
-                  asyncValidationInFlight: false,
-                },
-              },
-            },
-          ],
-        },
-      ]);
     });
   });
 });

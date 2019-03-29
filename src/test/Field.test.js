@@ -3,6 +3,8 @@
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
 
+import {FormContext} from "../Form";
+import FeedbackStrategies from "../feedbackStrategies";
 import Field from "../Field";
 import {type FieldLink} from "../types";
 import {mockFormState, mockLink} from "./tools";
@@ -23,6 +25,33 @@ describe("Field", () => {
       <Field link={link} validation={(_e: string) => []}>
         {() => null}
       </Field>;
+    });
+
+    it("Registers and unregisters for validation", () => {
+      const formState = mockFormState("Hello world.");
+      const link = mockLink(formState);
+      const unregister = jest.fn();
+      const registerValidation = jest.fn(() => unregister);
+
+      const renderer = TestRenderer.create(
+        <FormContext.Provider
+          value={{
+            shouldShowError: FeedbackStrategies.Always,
+            registerValidation,
+            validateFormStateAtPath: jest.fn(),
+            pristine: true,
+            submitted: false,
+          }}
+        >
+          <Field link={link} validation={jest.fn(() => [])}>
+            {jest.fn(() => null)}
+          </Field>
+        </FormContext.Provider>
+      );
+
+      expect(registerValidation).toBeCalledTimes(1);
+      renderer.unmount();
+      expect(unregister).toBeCalledTimes(1);
     });
 
     it("Sets errors.client and meta.succeeded when there are no errors", () => {

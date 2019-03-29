@@ -44,6 +44,7 @@ export default class LinkTap<T> extends React.Component<Props<T>> {
   render() {
     const {link} = this.props;
     const tappedLink: FieldLink<T> = {
+      path: link.path,
       formState: link.formState,
       onChange: this.handleChange,
       onBlur: this.handleBlur,
