@@ -331,9 +331,6 @@ describe("ObjectField", () => {
       const formState = mockFormState(formStateInner);
       const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
-      const validateFormStateAtPath = jest.fn(
-        (_subtreePath, formState) => formState
-      );
 
       const customChange = jest.fn((_oldValue, _newValue) => ({
         string: "A whole new value",
@@ -345,7 +342,9 @@ describe("ObjectField", () => {
           value={{
             shouldShowError: FeedbackStrategies.Always,
             registerValidation: jest.fn(),
-            validateFormStateAtPath,
+            validateFormStateAtPath: jest.fn(
+              (_subtreePath, formState) => formState
+            ),
             pristine: true,
             submitted: false,
           }}
@@ -387,14 +386,6 @@ describe("ObjectField", () => {
         },
         expect.anything(),
       ]);
-
-      // Validated the result of customChange
-      // TODO(dmnd): Remove this as it's about validation?
-      expect(validateFormStateAtPath).toHaveBeenCalledTimes(1);
-      expect(validateFormStateAtPath).toHaveBeenCalledWith(
-        [], // The ObjectField is at the root, so empty path
-        [{string: "A whole new value", number: 0}, expect.anything()]
-      );
     });
 
     it("can return null to signal there was no custom change", () => {
@@ -444,8 +435,6 @@ describe("ObjectField", () => {
       });
     });
 
-    // this test seems redundant since the first one asserts that the subtree is
-    // validated
     it("doesn't break validations for child fields", () => {
       const formStateInner = {
         string: "hello",
@@ -513,6 +502,41 @@ describe("ObjectField", () => {
           expect.anything(),
         ]
       );
+    });
+
+    it("doesn't create a new instance (i.e. remount)", () => {
+      const customChange = jest.fn((_oldValue, _newValue) => ({
+        string: "A whole new value",
+        number: 0,
+      }));
+
+      const renderer = TestRenderer.create(
+        <ObjectField
+          link={mockLink(
+            mockFormState({
+              string: "hello",
+              number: 42,
+            })
+          )}
+          customChange={customChange}
+        >
+          {links => <TestField link={links.string} />}
+        </ObjectField>
+      );
+
+      const testInstance = renderer.root.findAllByType(TestInput)[0].instance;
+
+      // now trigger a customChange, which used to cause a remount
+      testInstance.change("hi");
+      expect(customChange).toHaveBeenCalledTimes(1);
+
+      // but we no longer cause a remount, so the instances should be the same
+      const nextTestInstance = renderer.root.findAllByType(TestInput)[0]
+        .instance;
+
+      // Using Object.is here because toBe hangs as the objects are
+      // self-referential and thus not printable
+      expect(Object.is(testInstance, nextTestInstance)).toBe(true);
     });
   });
 });

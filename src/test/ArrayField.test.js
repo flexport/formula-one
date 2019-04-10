@@ -534,9 +534,6 @@ describe("ArrayField", () => {
       const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
       const validation = jest.fn(() => ["This is an error"]);
-      const validateFormStateAtPath = jest.fn(
-        (_subtreePath, formState) => formState
-      );
 
       const customChange = jest.fn((_oldValue, _newValue) => [
         "uno",
@@ -549,7 +546,9 @@ describe("ArrayField", () => {
           value={{
             shouldShowError: FeedbackStrategies.Always,
             registerValidation: jest.fn(),
-            validateFormStateAtPath,
+            validateFormStateAtPath: jest.fn(
+              (_subtreePath, formState) => formState
+            ),
             pristine: true,
             submitted: false,
           }}
@@ -582,14 +581,6 @@ describe("ArrayField", () => {
         ["uno", "dos", "tres"],
         expect.anything(),
       ]);
-
-      // Validated the result of customChange
-      // TODO(dmnd): Remove this as it's about validation?
-      expect(validateFormStateAtPath).toHaveBeenCalledTimes(1);
-      expect(validateFormStateAtPath).toHaveBeenCalledWith(
-        [], // The ArrayField is at the root, so empty path
-        [["uno", "dos", "tres"], expect.anything()]
-      );
     });
 
     it("can return null to signal there was no custom change", () => {
@@ -682,6 +673,33 @@ describe("ArrayField", () => {
         [], // The Array is at the root, so empty path
         [["1", "2"], expect.anything()]
       );
+    });
+
+    it("doesn't create a new instance (i.e. remount)", () => {
+      const customChange = jest.fn((_oldValue, _newValue) => ["uno", "dos"]);
+
+      const renderer = TestRenderer.create(
+        <ArrayField
+          link={mockLink(mockFormState(["1", "2"]))}
+          customChange={customChange}
+        >
+          {links => <TestField link={links[0]} />}
+        </ArrayField>
+      );
+
+      const testInstance = renderer.root.findAllByType(TestInput)[0].instance;
+
+      // now trigger a customChange, which used to cause a remount
+      testInstance.change("hi");
+      expect(customChange).toHaveBeenCalledTimes(1);
+
+      // but we no longer cause a remount, so the instances should be the same
+      const nextTestInstance = renderer.root.findAllByType(TestInput)[0]
+        .instance;
+
+      // Using Object.is here because toBe hangs as the objects are
+      // self-referential and thus not printable
+      expect(Object.is(testInstance, nextTestInstance)).toBe(true);
     });
   });
 });
