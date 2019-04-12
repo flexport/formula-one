@@ -29,22 +29,39 @@ import {
 import {pathFromPathString, type Path} from "./tree";
 import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
 
+export type ValidationOps<T> = {
+  unregister: () => void,
+  replace: (prevFn: (T) => Array<string>, nextFn: (T) => Array<string>) => void,
+};
+
+export function validationFnNoops<T>(): ValidationOps<T> {
+  return {
+    unregister() {},
+    replace() {},
+  };
+}
+
 export type FormContextPayload = {
   shouldShowError: (metaField: MetaField) => boolean,
   // These values are taken into account in shouldShowError, but are also
   // available in their raw form, for convenience.
   pristine: boolean,
   submitted: boolean,
-  registerValidation: (path: Path, fn: (mixed) => Array<string>) => () => void,
+  registerValidation: (
+    path: Path,
+    fn: (mixed) => Array<string>
+  ) => ValidationOps<mixed>,
   validateFormStateAtPath: (Path, FormState<*>) => FormState<*>,
+  validateAtPath: (path: Path, value: mixed) => Array<string>,
 };
 export const FormContext: React.Context<FormContextPayload> = React.createContext(
   {
     shouldShowError: () => true,
     pristine: false,
     submitted: true,
-    registerValidation: () => () => {},
+    registerValidation: () => ({replace: () => {}, unregister: () => {}}),
     validateFormStateAtPath: (path, x) => x,
+    validateAtPath: () => [],
   }
 );
 
@@ -101,7 +118,7 @@ function applyServerErrorsToFormState<T>(
   return [value, tree];
 }
 
-// STOP(dmnd): Unit tests, perhaps combine with existing implementation?
+// TODO(dmnd): Unit tests, perhaps combine with existing implementation?
 type EncodedPath = string;
 
 function encodePath(path: Path): EncodedPath {
@@ -164,14 +181,18 @@ function getValueAtPath(
 function validateSubtree<T>(
   subtreePath: Path,
   formState: FormState<T>,
-  validations: Map<string, (mixed) => Array<string>>
+  validations: Map<string, Map<number, (mixed) => Array<string>>>
 ): FormState<T> {
   const newTree = [...validations.entries()]
     .filter(([path]) => path.startsWith(encodePath(subtreePath)))
-    .map(([path, validation]) => {
+    .map(([path, validationsMap]) => {
       const parsedPath = decodePath(path);
       const val = getValueAtPath(parsedPath, formState[0]);
-      const errors = validation(val);
+
+      const errors = [...validationsMap.values()].reduce(
+        (errors, validationFn) => errors.concat(validationFn(val)),
+        []
+      );
       return [parsedPath, errors];
     })
     .reduce(
@@ -191,6 +212,45 @@ function validateSubtree<T>(
     );
 
   return [formState[0], newTree];
+}
+
+// Unique id for each field so that errors can be tracked by the fields that
+// produced them. This is necessary because it's possible for multiple fields
+// to reference the same link "aliasing".
+let _nextFieldId = 0;
+function nextFieldId() {
+  return _nextFieldId++;
+}
+
+function validateAtPath(
+  path: Path,
+  value: mixed,
+  validations: Map<string, Map<number, (mixed) => Array<string>>>
+): Array<string> {
+  const map = validations.get(encodePath(path));
+  if (!map) {
+    return [];
+  }
+
+  return [...map.values()].reduce(
+    (errors, validationFn) => errors.concat(validationFn(value)),
+    []
+  );
+}
+
+function arrayEqual(
+  a: $ReadOnlyArray<mixed>,
+  b: $ReadOnlyArray<mixed>
+): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 type Props<T, ExtraSubmitData> = {|
@@ -242,7 +302,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     return null;
   }
 
-  validations: Map<EncodedPath, <T>(T) => Array<string>>;
+  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>;
 
   constructor(props: Props<T, ExtraSubmitData>) {
     super(props);
@@ -264,9 +324,14 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   componentDidMount() {
     // Take care to use an updater to avoid clobbering changes from fields that
     // call onChange during cDM.
-    this.setState(prevState => ({
-      formState: validateSubtree([], prevState.formState, this.validations),
-    }));
+    this.setState(
+      prevState => ({
+        formState: validateSubtree([], prevState.formState, this.validations),
+      }),
+      () => {
+        this.props.onValidation(isValid(this.state.formState));
+      }
+    );
   }
 
   // Public API: submit from the outside
@@ -323,15 +388,89 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     );
   };
 
+  /**
+   * Keeps validation errors from becoming stale when validation functions of
+   * children change.
+   */
+  recomputeErrorsAtPathAndRender = (path: Path) => {
+    this.setState(({formState: [value, meta]}) => {
+      const errors = validateAtPath(path, value, this.validations);
+      const updatedMeta = updateAtPath(
+        path,
+        extras => ({...extras, errors: {...extras.errors, client: errors}}),
+        meta
+      );
+      return {formState: [value, updatedMeta]};
+    });
+  };
+
   handleRegisterValidation = (path: Path, fn: mixed => Array<string>) => {
     const encodedPath = encodePath(path);
-    this.validations.set(encodedPath, fn);
+    let fieldId = nextFieldId();
 
-    // TODO(dmnd): Remove errors (or just revalidate?) when this happens to make
-    // sure an error doesn't stick around
-    return () => {
-      this.validations.delete(encodedPath);
+    const map = this.validations.get(encodedPath) || new Map();
+    map.set(fieldId, fn);
+    this.validations.set(encodedPath, map);
+
+    return {
+      replace: (oldFn, newFn) =>
+        this.replaceValidation(path, fieldId, oldFn, newFn),
+      unregister: () => this.unregisterValidation(path, fieldId),
     };
+  };
+
+  replaceValidation = (
+    path: Path,
+    fieldId: number,
+    oldFn: mixed => Array<string>,
+    newFn: mixed => Array<string>
+  ) => {
+    // Sanity check in case caller didn't do it
+    if (oldFn === newFn) {
+      return;
+    }
+
+    const encodedPath = encodePath(path);
+    const map = this.validations.get(encodedPath);
+    invariant(map != null, "Expected to find handler map during replace");
+
+    const storedOldFn = map.get(fieldId);
+    invariant(
+      oldFn === storedOldFn,
+      "Component passed incorrect existing validation function"
+    );
+    map.set(fieldId, newFn);
+
+    // Now that the old validation is gone, make sure there are no left over
+    // errors from it.
+    const value = getValueAtPath(path, this.state.formState[0]);
+    if (arrayEqual(oldFn(value), newFn(value))) {
+      // The errors haven't changed, so don't bother calling setState.
+      // You might think this is a silly performance optimization but actually
+      // we need this for annoying React reasons:
+
+      // If the validation function is an inline function, its identity changes
+      // every render. This means replaceValidation gets called every time
+      // componentDidUpdate runs (i.e. each render). Then when setState is
+      // called from recomputeErrorsAtPathAndRender, it'll cause another render,
+      // which causes another componentDidUpdate, and so on. So, take care to
+      // avoid an infinite loop by returning early here.
+      return;
+    }
+
+    // The new validation function returns different errors, so re-render.
+    this.recomputeErrorsAtPathAndRender(path);
+  };
+
+  unregisterValidation = (path: Path, fieldId: number) => {
+    const encodedPath = encodePath(path);
+    const map = this.validations.get(encodedPath);
+    invariant(map != null, "Couldn't find handler map during unregister");
+    map.delete(fieldId);
+
+    // now that the validation is gone, make sure there are no left over
+    // errors from it
+    this.recomputeErrorsAtPathAndRender(path);
   };
 
   render() {
@@ -348,6 +487,8 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
           registerValidation: this.handleRegisterValidation,
           validateFormStateAtPath: (path, formState) =>
             validateSubtree(path, formState, this.validations),
+          validateAtPath: (path, value) =>
+            validateAtPath(path, value, this.validations),
           ...metaForm,
         }}
       >

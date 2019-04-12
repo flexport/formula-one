@@ -7,6 +7,7 @@ import Form, {FormContext} from "../Form";
 import ObjectField from "../ObjectField";
 import ArrayField from "../ArrayField";
 import Field from "../Field";
+import type {FieldLink} from "../types";
 
 import {expectLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
@@ -41,6 +42,154 @@ function NaughtyRenderingField(props) {
 }
 
 describe("Form", () => {
+  describe("validations", () => {
+    it("runs validations", () => {
+      const objectValidation = jest.fn(() => []);
+      const arrayValidation = jest.fn(() => []);
+      const arrayElValidation = jest.fn(() => []);
+      const fieldValidation = jest.fn(() => []);
+
+      TestRenderer.create(
+        <Form initialValue={{a: ["1", "2"], s: "string"}}>
+          {link => (
+            <ObjectField link={link} validation={objectValidation}>
+              {links => (
+                <>
+                  <ArrayField link={links.a} validation={arrayValidation}>
+                    {links =>
+                      links.map((link, i) => (
+                        <TestField
+                          key={i}
+                          link={link}
+                          validation={arrayElValidation}
+                        />
+                      ))
+                    }
+                  </ArrayField>
+                  <TestField link={links.s} validation={fieldValidation} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      expect(objectValidation).toHaveBeenCalledTimes(1);
+      expect(objectValidation).toHaveBeenCalledWith({
+        a: ["1", "2"],
+        s: "string",
+      });
+
+      expect(arrayValidation).toHaveBeenCalledTimes(1);
+      expect(arrayValidation).toHaveBeenCalledWith(["1", "2"]);
+
+      expect(arrayElValidation).toHaveBeenCalledTimes(2);
+      expect(arrayElValidation).toHaveBeenCalledWith("1");
+      expect(arrayElValidation).toHaveBeenCalledWith("2");
+
+      expect(fieldValidation).toHaveBeenCalledTimes(1);
+      expect(fieldValidation).toHaveBeenCalledWith("string");
+    });
+
+    it("sets validation information on formState", () => {
+      const objectValidation = jest.fn(() => ["object error"]);
+      const arrayValidation = jest.fn(() => ["array", "error"]);
+      const arrayElValidation = jest.fn(s => [`error ${s}`]);
+      const fieldValidation = jest.fn(() => []);
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={{a: ["1", "2"], s: "string"}}>
+          {link => (
+            <ObjectField link={link} validation={objectValidation}>
+              {links => (
+                <>
+                  <ArrayField link={links.a} validation={arrayValidation}>
+                    {links =>
+                      links.map((link, i) => (
+                        <TestField
+                          key={i}
+                          link={link}
+                          validation={arrayElValidation}
+                        />
+                      ))
+                    }
+                  </ArrayField>
+                  <TestField link={links.s} validation={fieldValidation} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      const formState = renderer.root.findByType(ObjectField).instance.props
+        .link.formState;
+
+      let node = formState[1];
+      expect(node.data.errors.client).toEqual(["object error"]);
+      expect(node.data.meta.succeeded).toBe(false);
+
+      node = node.children.a;
+      expect(node.data.errors.client).toEqual(["array", "error"]);
+      expect(node.data.meta.succeeded).toBe(false);
+
+      const child0 = node.children[0];
+      expect(child0.data.errors.client).toEqual(["error 1"]);
+      expect(child0.data.meta.succeeded).toBe(false);
+
+      const child1 = node.children[1];
+      expect(child1.data.errors.client).toEqual(["error 2"]);
+      expect(child1.data.meta.succeeded).toBe(false);
+
+      node = formState[1].children.s;
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+    });
+
+    it("treats no validation as always passing", () => {
+      const renderer = TestRenderer.create(
+        <Form initialValue={{a: ["1", "2"], s: "string"}}>
+          {link => (
+            <ObjectField link={link}>
+              {links => (
+                <>
+                  <ArrayField link={links.a}>
+                    {links =>
+                      links.map((link, i) => <TestField key={i} link={link} />)
+                    }
+                  </ArrayField>
+                  <TestField link={links.s} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      const formState = renderer.root.findByType(ObjectField).instance.props
+        .link.formState;
+
+      let node = formState[1];
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+
+      node = node.children.a;
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+
+      const child0 = node.children[0];
+      expect(child0.data.errors.client).toEqual([]);
+      expect(child0.data.meta.succeeded).toBe(true);
+
+      const child1 = node.children[1];
+      expect(child1.data.errors.client).toEqual([]);
+      expect(child1.data.meta.succeeded).toBe(true);
+
+      node = formState[1].children.s;
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+    });
+  });
   describe("Form manages form state", () => {
     it("creates the initial formState from initialValue and serverErrors", () => {
       const onSubmit = jest.fn();
@@ -168,6 +317,16 @@ describe("Form", () => {
       expect(array.data.errors.server).toEqual([]);
       const array0 = array.children[0];
       expect(array0.data.errors.server).toEqual(["inner error"]);
+    });
+
+    it("doesn't cause an infinite loop when using inline validation function", () => {
+      expect(() => {
+        TestRenderer.create(
+          <Form initialValue="hello">
+            {link => <TestField link={link} validation={() => []} />}
+          </Form>
+        );
+      }).not.toThrow(/Maximum update depth exceeded/);
     });
 
     it("collects the initial validations", () => {
@@ -426,6 +585,176 @@ describe("Form", () => {
         })
       );
     });
+
+    it("removes errors when a child unmounts", () => {
+      const validation1 = jest.fn(() => ["error 1"]);
+      const validation2 = jest.fn(() => ["error 2"]);
+
+      class TestForm extends React.Component<{
+        hideSecondField: boolean,
+        link: FieldLink<{string1: string, string2: string}>,
+      }> {
+        render() {
+          return (
+            <ObjectField link={this.props.link}>
+              {links => (
+                <>
+                  <TestField
+                    key={"1"}
+                    link={links.string1}
+                    validation={validation1}
+                  />
+                  {this.props.hideSecondField ? null : (
+                    <TestField
+                      key={"2"}
+                      link={links.string2}
+                      validation={validation2}
+                    />
+                  )}
+                </>
+              )}
+            </ObjectField>
+          );
+        }
+      }
+
+      const renderer = TestRenderer.create(
+        <Form
+          initialValue={{
+            string1: "hello",
+            string2: "world",
+          }}
+        >
+          {link => <TestForm link={link} hideSecondField={false} />}
+        </Form>
+      );
+
+      expect(validation1).toHaveBeenCalledTimes(1);
+      expect(validation2).toHaveBeenCalledTimes(1);
+
+      let rootFormState = renderer.root.findByType(TestForm).instance.props.link
+        .formState[1];
+
+      let string1Errors = rootFormState.children.string1.data.errors.client;
+      expect(string1Errors).toEqual(["error 1"]);
+      let string2Errors = rootFormState.children.string2.data.errors.client;
+      expect(string2Errors).toEqual(["error 2"]);
+
+      // now hide the second field, causing it to unmount and unregister the
+      // validation handler
+      renderer.update(
+        <Form
+          initialValue={{
+            string1: "hello",
+            string2: "world",
+          }}
+        >
+          {link => <TestForm link={link} hideSecondField={true} />}
+        </Form>
+      );
+
+      // no addition validation calls
+      expect(validation1).toHaveBeenCalledTimes(1);
+      expect(validation2).toHaveBeenCalledTimes(1);
+
+      rootFormState = renderer.root.findByType(TestForm).instance.props.link
+        .formState[1];
+
+      // error for string1 remains
+      string1Errors = rootFormState.children.string1.data.errors.client;
+      expect(string1Errors).toEqual(["error 1"]);
+
+      // string2's error is gone
+      string2Errors = rootFormState.children.string2.data.errors.client;
+      expect(string2Errors).toEqual([]);
+    });
+
+    it("runs all validations when a link has multiple fields", () => {
+      const validation1 = jest.fn(() => ["error 1"]);
+      const validation2 = jest.fn(() => ["error 2"]);
+
+      const renderer = TestRenderer.create(
+        <Form initialValue="hello">
+          {link => (
+            <>
+              {/* note both fields point to the same link!! */}
+              <TestField key={"1"} link={link} validation={validation1} />
+              <TestField key={"2"} link={link} validation={validation2} />
+            </>
+          )}
+        </Form>
+      );
+
+      expect(validation1).toHaveBeenCalledTimes(1);
+      expect(validation2).toHaveBeenCalledTimes(1);
+
+      renderer.root.findAllByType(TestInput)[0].instance.change("dmnd");
+
+      expect(validation1).toHaveBeenCalledTimes(2);
+      expect(validation2).toHaveBeenCalledTimes(2);
+
+      renderer.root.findAllByType(TestInput)[1].instance.change("zach");
+
+      expect(validation1).toHaveBeenCalledTimes(3);
+      expect(validation2).toHaveBeenCalledTimes(3);
+    });
+
+    it("only removes errors from validation that was unmounted", () => {
+      const validation1 = jest.fn(() => ["error 1"]);
+      const validation2 = jest.fn(() => ["error 2"]);
+
+      const renderer = TestRenderer.create(
+        <Form initialValue="hello">
+          {link => (
+            <>
+              {/* note both fields point to the same link!! */}
+              <TestField key={"1"} link={link} validation={validation1} />
+              <TestField key={"2"} link={link} validation={validation2} />
+            </>
+          )}
+        </Form>
+      );
+
+      let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      let errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 1", "error 2"]);
+
+      renderer.update(
+        <Form initialValue="hello">
+          {link => (
+            <>
+              <TestField key={"1"} link={link} validation={validation1} />
+            </>
+          )}
+        </Form>
+      );
+
+      link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 1"]);
+    });
+  });
+
+  it("updates errors when a new validation function is provided via props", () => {
+    const renderer = TestRenderer.create(
+      <Form initialValue="hello">
+        {link => <TestField link={link} validation={() => ["error 1"]} />}
+      </Form>
+    );
+
+    let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+    let errors = link.formState[1].data.errors.client;
+    expect(errors).toEqual(["error 1"]);
+
+    renderer.update(
+      <Form initialValue="hello">
+        {link => <TestField link={link} validation={() => ["error 2"]} />}
+      </Form>
+    );
+
+    link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+    errors = link.formState[1].data.errors.client;
+    expect(errors).toEqual(["error 2"]);
   });
 
   it("Calls onSubmit with the value when submitted", () => {

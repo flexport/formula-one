@@ -5,6 +5,7 @@ import TestRenderer from "react-test-renderer";
 import {FormContext} from "../Form";
 import FeedbackStrategies from "../feedbackStrategies";
 import ObjectField from "../ObjectField";
+import Form from "../Form";
 import {type FieldLink} from "../types";
 
 import {expectLink, mockLink, mockFormState} from "./tools";
@@ -18,145 +19,92 @@ describe("ObjectField", () => {
   });
 
   describe("ObjectField is a field", () => {
-    describe("validates on mount", () => {
-      it("ensures that the link inner type matches the type of the validation", () => {
-        type TestObject = {|
-          string: string,
-          number: number,
-        |};
-        const formStateInner: TestObject = {
-          string: "hello",
-          number: 42,
-        };
-        const formState = mockFormState(formStateInner);
-        const link: FieldLink<TestObject> = mockLink(formState);
+    it("ensures that the link inner type matches the type of the validation", () => {
+      type TestObject = {|
+        string: string,
+        number: number,
+      |};
+      const formStateInner: TestObject = {
+        string: "hello",
+        number: 42,
+      };
+      const formState = mockFormState(formStateInner);
+      const link: FieldLink<TestObject> = mockLink(formState);
 
-        // $ExpectError
-        <ObjectField link={link} validation={(_e: empty) => []}>
-          {() => null}
-        </ObjectField>;
+      // $ExpectError
+      <ObjectField link={link} validation={(_e: empty) => []}>
+        {() => null}
+      </ObjectField>;
 
-        // $ExpectError
-        <ObjectField link={link} validation={(_e: {|string: string|}) => []}>
-          {() => null}
-        </ObjectField>;
+      // $ExpectError
+      <ObjectField link={link} validation={(_e: {|string: string|}) => []}>
+        {() => null}
+      </ObjectField>;
 
-        <ObjectField link={link} validation={(_e: TestObject) => []}>
-          {() => null}
-        </ObjectField>;
-      });
+      <ObjectField link={link} validation={(_e: TestObject) => []}>
+        {() => null}
+      </ObjectField>;
+    });
 
-      it("Registers and unregisters for validation", () => {
-        const formState = mockFormState({inner: "value"});
-        const link = mockLink(formState);
-        const unregister = jest.fn();
-        const registerValidation = jest.fn(() => unregister);
+    it("Registers and unregisters for validation", () => {
+      const formState = mockFormState({inner: "value"});
+      const link = mockLink(formState);
+      const unregister = jest.fn();
+      const registerValidation = jest.fn(() => ({
+        replace: jest.fn(),
+        unregister,
+      }));
 
-        const renderer = TestRenderer.create(
-          <FormContext.Provider
-            value={{
-              shouldShowError: FeedbackStrategies.Always,
-              registerValidation,
-              validateFormStateAtPath: jest.fn(),
-              pristine: true,
-              submitted: false,
-            }}
-          >
-            <ObjectField link={link} validation={jest.fn(() => [])}>
-              {jest.fn(() => null)}
-            </ObjectField>
-          </FormContext.Provider>
-        );
-
-        expect(registerValidation).toBeCalledTimes(1);
-        renderer.unmount();
-        expect(unregister).toBeCalledTimes(1);
-      });
-
-      it("Sets errors.client and meta.succeeded when there are no errors", () => {
-        const validation = jest.fn(() => []);
-        const formState = mockFormState({inner: "value"});
-        const link = mockLink(formState);
-
-        TestRenderer.create(
-          <ObjectField link={link} validation={validation}>
+      const renderer = TestRenderer.create(
+        <FormContext.Provider
+          value={{
+            shouldShowError: FeedbackStrategies.Always,
+            registerValidation,
+            validateFormStateAtPath: jest.fn(),
+            validateAtPath: jest.fn(),
+            pristine: true,
+            submitted: false,
+          }}
+        >
+          <ObjectField link={link} validation={jest.fn(() => [])}>
             {jest.fn(() => null)}
           </ObjectField>
-        );
+        </FormContext.Provider>
+      );
 
-        expect(validation).toHaveBeenCalledTimes(1);
-        expect(validation).toHaveBeenCalledWith(formState[0]);
-        expect(link.onValidation).toHaveBeenCalledTimes(1);
+      expect(registerValidation).toBeCalledTimes(1);
+      renderer.unmount();
+      expect(unregister).toBeCalledTimes(1);
+    });
 
-        const [path, errors] = link.onValidation.mock.calls[0];
-        expect(path).toEqual([]);
-        expect(errors).toEqual([]);
-      });
+    it("Passes additional information to its render function", () => {
+      const formState = mockFormState({inner: "value"});
+      // $FlowFixMe
+      formState[1].data.errors = {
+        server: ["A server error"],
+        client: ["A client error"],
+      };
+      const link = mockLink(formState);
+      const renderFn = jest.fn(() => null);
 
-      it("Sets errors.client and meta.succeeded when there are errors", () => {
-        const validation = jest.fn(() => ["This is an error"]);
-        const formState = mockFormState({inner: "value"});
-        const link = mockLink(formState);
+      TestRenderer.create(<ObjectField link={link}>{renderFn}</ObjectField>);
 
-        TestRenderer.create(
-          <ObjectField link={link} validation={validation}>
-            {jest.fn(() => null)}
-          </ObjectField>
-        );
-
-        expect(validation).toHaveBeenCalledTimes(1);
-        expect(validation).toHaveBeenCalledWith(formState[0]);
-        expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-        const [path, errors] = link.onValidation.mock.calls[0];
-        expect(path).toEqual([]);
-        expect(errors).toEqual(["This is an error"]);
-      });
-
-      it("Treats no validation as always passing", () => {
-        const formState = mockFormState({inner: "value"});
-        const link = mockLink(formState);
-
-        TestRenderer.create(
-          <ObjectField link={link}>{jest.fn(() => null)}</ObjectField>
-        );
-
-        expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-        const [path, errors] = link.onValidation.mock.calls[0];
-        expect(path).toEqual([]);
-        expect(errors).toEqual([]);
-      });
-
-      it("Passes additional information to its render function", () => {
-        const formState = mockFormState({inner: "value"});
-        // $FlowFixMe
-        formState[1].data.errors = {
-          server: ["A server error"],
-          client: ["A client error"],
-        };
-        const link = mockLink(formState);
-        const renderFn = jest.fn(() => null);
-
-        TestRenderer.create(<ObjectField link={link}>{renderFn}</ObjectField>);
-
-        expect(renderFn).toHaveBeenCalled();
-        expect(renderFn).toHaveBeenCalledWith(
-          expect.anything(),
-          expect.objectContaining({
-            touched: false,
-            changed: false,
-            shouldShowErrors: expect.anything(),
-            unfilteredErrors: expect.arrayContaining([
-              "A server error",
-              "A client error",
-            ]),
-            valid: false,
-            asyncValidationInFlight: false,
-            value: {inner: "value"},
-          })
-        );
-      });
+      expect(renderFn).toHaveBeenCalled();
+      expect(renderFn).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          touched: false,
+          changed: false,
+          shouldShowErrors: expect.anything(),
+          unfilteredErrors: expect.arrayContaining([
+            "A server error",
+            "A client error",
+          ]),
+          valid: false,
+          asyncValidationInFlight: false,
+          value: {inner: "value"},
+        })
+      );
     });
   });
 
@@ -269,42 +217,23 @@ describe("ObjectField", () => {
       });
     });
 
-    it("calls onValidation when a child runs validations", () => {
-      const formStateInner = {
-        string: "hello",
-        number: 42,
-      };
-      const formState = mockFormState(formStateInner);
-      const link = mockLink(formState);
-      const renderFn = jest.fn(() => null);
-
-      TestRenderer.create(<ObjectField link={link}>{renderFn}</ObjectField>);
-
-      const objectLinks = renderFn.mock.calls[0][0];
-      // call the child onValidation
-      objectLinks.string.onValidation([], ["Some", "errors"]);
-
-      expect(link.onValidation).toHaveBeenCalledTimes(2);
-      // Important: the first call to onValidation is for the initial render validation
-      const [path, errors] = link.onValidation.mock.calls[1];
-      expect(path).toEqual([{type: "object", key: "string"}]);
-      expect(errors).toEqual(["Some", "errors"]);
-    });
-
     it("calls its own validation when a child changes", () => {
-      const formStateInner = {
-        string: "hello",
-        number: 42,
-      };
-      const formState = mockFormState(formStateInner);
-      const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
       const validation = jest.fn(() => ["This is an error"]);
 
       TestRenderer.create(
-        <ObjectField link={link} validation={validation}>
-          {renderFn}
-        </ObjectField>
+        <Form
+          initialValue={{
+            string: "hello",
+            number: 42,
+          }}
+        >
+          {link => (
+            <ObjectField link={link} validation={validation}>
+              {renderFn}
+            </ObjectField>
+          )}
+        </Form>
       );
 
       expect(validation).toHaveBeenCalledTimes(1);
@@ -345,6 +274,7 @@ describe("ObjectField", () => {
             validateFormStateAtPath: jest.fn(
               (_subtreePath, formState) => formState
             ),
+            validateAtPath: jest.fn(),
             pristine: true,
             submitted: false,
           }}
@@ -389,25 +319,28 @@ describe("ObjectField", () => {
     });
 
     it("can return null to signal there was no custom change", () => {
-      const formStateInner = {
-        string: "hello",
-        number: 42,
-      };
-      const formState = mockFormState(formStateInner);
-      const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
       const validation = jest.fn(() => ["This is an error"]);
 
       const customChange = jest.fn((_oldValue, _newValue) => null);
 
-      TestRenderer.create(
-        <ObjectField
-          link={link}
-          validation={validation}
-          customChange={customChange}
+      const renderer = TestRenderer.create(
+        <Form
+          initialValue={{
+            string: "hello",
+            number: 42,
+          }}
         >
-          {renderFn}
-        </ObjectField>
+          {link => (
+            <ObjectField
+              link={link}
+              validation={validation}
+              customChange={customChange}
+            >
+              {renderFn}
+            </ObjectField>
+          )}
+        </Form>
       );
 
       const objectLinks = renderFn.mock.calls[0][0];
@@ -417,9 +350,9 @@ describe("ObjectField", () => {
 
       expect(customChange).toHaveBeenCalledTimes(1);
 
-      // onChange should be called with the result of customChange
-      expect(link.onChange).toHaveBeenCalledTimes(1);
-      expect(link.onChange).toHaveBeenCalledWith([
+      const link = renderer.root.findByType(ObjectField).instance.props.link;
+      // the value we get out is as if customChange didn't exist
+      expect(link.formState).toEqual([
         {
           string: "newString",
           number: 42,
@@ -436,72 +369,68 @@ describe("ObjectField", () => {
     });
 
     it("doesn't break validations for child fields", () => {
-      const formStateInner = {
-        string: "hello",
-        string2: "goodbye",
-      };
-      const formState = mockFormState(formStateInner);
-      const link = mockLink(formState);
-      const validateFormStateAtPath = jest.fn(
-        (_subtreePath, formState) => formState
-      );
-
       const customChange = jest.fn((_oldValue, _newValue) => ({
         string: "a whole new value",
         string2: "modified sibling value",
       }));
 
       const childValidation = jest.fn(() => ["This is an error"]);
+      const parentValidation = jest.fn(() => [
+        "This is an error from the parent",
+      ]);
 
       const renderer = TestRenderer.create(
-        <FormContext.Provider
-          value={{
-            shouldShowError: FeedbackStrategies.Always,
-            registerValidation: jest.fn(),
-            validateFormStateAtPath,
-            pristine: true,
-            submitted: false,
+        <Form
+          initialValue={{
+            string: "hello",
+            string2: "goodbye",
           }}
         >
-          <ObjectField link={link} customChange={customChange}>
-            {links => (
-              <React.Fragment>
-                <TestField link={links.string} validation={childValidation} />
-                <TestField link={links.string2} validation={childValidation} />
-              </React.Fragment>
-            )}
-          </ObjectField>
+          {link => (
+            <ObjectField
+              link={link}
+              customChange={customChange}
+              validation={parentValidation}
+            >
+              {links => (
+                <React.Fragment>
+                  <TestField link={links.string} validation={childValidation} />
+                  <TestField
+                    link={links.string2}
+                    validation={childValidation}
+                  />
+                </React.Fragment>
+              )}
+            </ObjectField>
           )}
-        </FormContext.Provider>
+        </Form>
       );
 
-      // 5 validations:
-      // 1) Child initial validation x2
-      // 2) Parent initial validation
-      // 3) Subtree upon customChange
-      // (No parent onValidation call, because it will use onChange)
-
-      // 1) and 2)
-      expect(link.onValidation).toHaveBeenCalledTimes(3);
-      link.onValidation.mockClear();
+      // after mount, validate everything
+      expect(parentValidation).toHaveBeenCalledTimes(1);
+      expect(childValidation).toHaveBeenCalledTimes(2);
 
       // Now change one of the values
-      validateFormStateAtPath.mockClear();
+      parentValidation.mockClear();
+      childValidation.mockClear();
       const inner = renderer.root.findAllByType(TestInput)[0];
       inner.instance.change("zach");
 
-      // 3)
-      expect(validateFormStateAtPath).toHaveBeenCalledTimes(1);
-      expect(validateFormStateAtPath).toHaveBeenCalledWith(
-        [], // The ObjectField is at the root path, so empty path
-        [
-          {
-            string: "a whole new value",
-            string2: "modified sibling value",
-          },
-          expect.anything(),
-        ]
-      );
+      // Validate the whole subtree due to the customChange child validates
+      // once. Note that child validation will be called 3 times. Once after the
+      // change, then twice more after the customChange triggers a validation fo
+      // the entire subtree.
+      expect(parentValidation).toHaveBeenCalledTimes(1);
+      expect(childValidation).toHaveBeenCalledTimes(1 + 2);
+
+      const link = renderer.root.findByType(ObjectField).instance.props.link;
+      expect(link.formState).toEqual([
+        {
+          string: "a whole new value",
+          string2: "modified sibling value",
+        },
+        expect.anything(),
+      ]);
     });
 
     it("doesn't create a new instance (i.e. remount)", () => {

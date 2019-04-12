@@ -12,90 +12,49 @@ import TestField, {TestInput} from "./TestField";
 import {mapRoot} from "../shapedTree";
 
 describe("Field", () => {
-  describe("validates on mount", () => {
-    it("ensures that the link inner type matches the type of the validation", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
+  it("ensures that the link inner type matches the type of the validation", () => {
+    const formState = mockFormState("Hello world.");
+    const link = mockLink(formState);
 
-      // $ExpectError
-      <Field link={link} validation={(_e: empty) => []}>
-        {() => null}
-      </Field>;
+    // $ExpectError
+    <Field link={link} validation={(_e: empty) => []}>
+      {() => null}
+    </Field>;
 
-      <Field link={link} validation={(_e: string) => []}>
-        {() => null}
-      </Field>;
-    });
+    <Field link={link} validation={(_e: string) => []}>
+      {() => null}
+    </Field>;
+  });
 
-    it("Registers and unregisters for validation", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-      const unregister = jest.fn();
-      const registerValidation = jest.fn(() => unregister);
+  it("Registers and unregisters for validation", () => {
+    const formState = mockFormState("Hello world.");
+    const link = mockLink(formState);
+    const unregister = jest.fn();
+    const registerValidation = jest.fn(() => ({
+      replace: jest.fn(),
+      unregister,
+    }));
 
-      const renderer = TestRenderer.create(
-        <FormContext.Provider
-          value={{
-            shouldShowError: FeedbackStrategies.Always,
-            registerValidation,
-            validateFormStateAtPath: jest.fn(),
-            pristine: true,
-            submitted: false,
-          }}
-        >
-          <Field link={link} validation={jest.fn(() => [])}>
-            {jest.fn(() => null)}
-          </Field>
-        </FormContext.Provider>
-      );
+    const renderer = TestRenderer.create(
+      <FormContext.Provider
+        value={{
+          shouldShowError: FeedbackStrategies.Always,
+          registerValidation,
+          validateFormStateAtPath: jest.fn(),
+          validateAtPath: jest.fn(),
+          pristine: true,
+          submitted: false,
+        }}
+      >
+        <Field link={link} validation={jest.fn(() => [])}>
+          {jest.fn(() => null)}
+        </Field>
+      </FormContext.Provider>
+    );
 
-      expect(registerValidation).toBeCalledTimes(1);
-      renderer.unmount();
-      expect(unregister).toBeCalledTimes(1);
-    });
-
-    it("Sets errors.client and meta.succeeded when there are no errors", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-      const validation = jest.fn(() => []);
-
-      TestRenderer.create(<TestField link={link} validation={validation} />);
-
-      expect(validation).toHaveBeenCalledTimes(1);
-      expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-      const [path, errors] = link.onValidation.mock.calls[0];
-      expect(path).toEqual([]);
-      expect(errors).toEqual([]);
-    });
-
-    it("Sets errors.client and meta.succeeded when there are errors", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-      const validation = jest.fn(() => ["This is an error"]);
-
-      TestRenderer.create(<TestField link={link} validation={validation} />);
-
-      expect(validation).toHaveBeenCalledTimes(1);
-      expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-      const [path, errors] = link.onValidation.mock.calls[0];
-      expect(path).toEqual([]);
-      expect(errors).toEqual(["This is an error"]);
-    });
-
-    it("Counts as successfully validated if there is no validation", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-
-      TestRenderer.create(<TestField link={link} />);
-
-      expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-      const [path, errors] = link.onValidation.mock.calls[0];
-      expect(path).toEqual([]);
-      expect(errors).toEqual([]);
-    });
+    expect(registerValidation).toBeCalledTimes(1);
+    renderer.unmount();
+    expect(unregister).toBeCalledTimes(1);
   });
 
   it("calls the link onChange with new values and correct meta", () => {

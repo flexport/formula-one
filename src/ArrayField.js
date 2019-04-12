@@ -29,7 +29,7 @@ import {
   zip,
   unzip,
 } from "./utils/array";
-import {FormContext} from "./Form";
+import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
 import {
   type FormState,
   replaceArrayChild,
@@ -37,7 +37,7 @@ import {
   setChanged,
   setExtrasTouched,
   arrayChild,
-  validate,
+  setValidationResult,
   getExtras,
   flatRootErrors,
   isValid,
@@ -102,32 +102,24 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
   };
   static contextType = FormContext;
 
-  unregisterValidation = () => {};
-
-  _initialValidate() {
-    const {
-      link: {formState, onValidation},
-      validation,
-    } = this.props;
-    const [value] = formState;
-    const {errors} = getExtras(formState);
-
-    if (errors.client === "pending") {
-      onValidation([], validation(value));
-    }
-  }
+  validationFnOps: ValidationOps<Array<E>> = validationFnNoops();
 
   componentDidMount() {
-    this.unregisterValidation = this.context.registerValidation(
+    this.validationFnOps = this.context.registerValidation(
       this.props.link.path,
       this.props.validation
     );
+  }
 
-    this._initialValidate();
+  componentDidUpdate(prevProps: Props<E>) {
+    if (prevProps.validation !== this.props.validation) {
+      this.validationFnOps.replace(prevProps.validation, this.props.validation);
+    }
   }
 
   componentWillUnmount() {
-    this.unregisterValidation();
+    this.validationFnOps.unregister();
+    this.validationFnOps = validationFnNoops();
   }
 
   _handleChildChange: (number, FormState<E>) => void = (
@@ -158,8 +150,12 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
         nextFormState
       );
     } else {
+      const errors = this.context.validateAtPath(
+        this.props.link.path,
+        newValue
+      );
       const nextFormState = setChanged(newFormState);
-      validatedFormState = validate(this.props.validation, nextFormState);
+      validatedFormState = setValidationResult(errors, nextFormState);
     }
     this.props.link.onChange(validatedFormState);
   };
@@ -209,11 +205,9 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
+    const errors = this.context.validateAtPath(this.props.link.path, newValue);
     this.props.link.onChange(
-      validate(
-        this.props.validation,
-        setChanged(setTouched([newValue, newTree]))
-      )
+      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
     );
   };
 
@@ -238,11 +232,9 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
+    const errors = this.context.validateAtPath(this.props.link.path, newValue);
     this.props.link.onChange(
-      validate(
-        this.props.validation,
-        setChanged(setTouched([newValue, newTree]))
-      )
+      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
     );
   };
 
@@ -259,11 +251,9 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
     const newTree = dangerouslySetChildren(newChildren, oldTree);
 
+    const errors = this.context.validateAtPath(this.props.link.path, newValue);
     this.props.link.onChange(
-      validate(
-        this.props.validation,
-        setChanged(setTouched([newValue, newTree]))
-      )
+      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
     );
   };
 
@@ -305,11 +295,9 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
     const newTree = dangerouslySetChildren(newChildren, oldTree);
 
+    const errors = this.context.validateAtPath(this.props.link.path, newValue);
     this.props.link.onChange(
-      validate(
-        this.props.validation,
-        setChanged(setTouched([newValue, newTree]))
-      )
+      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
     );
   };
 
@@ -322,11 +310,9 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
+    const errors = this.context.validateAtPath(this.props.link.path, newValue);
     this.props.link.onChange(
-      validate(
-        this.props.validation,
-        setChanged(setTouched([newValue, newTree]))
-      )
+      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
     );
   };
 
@@ -338,11 +324,9 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       moveFromTo(from, to, shapedArrayChildren(oldTree)),
       oldTree
     );
+    const errors = this.context.validateAtPath(this.props.link.path, newValue);
     this.props.link.onChange(
-      validate(
-        this.props.validation,
-        setChanged(setTouched([newValue, newTree]))
-      )
+      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
     );
   };
 

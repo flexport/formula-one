@@ -10,14 +10,14 @@ import type {
   AdditionalRenderInfo,
   CustomChange,
 } from "./types";
-import {FormContext} from "./Form";
+import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
 import {
   type FormState,
   setChanged,
   replaceObjectChild,
   setExtrasTouched,
   objectChild,
-  validate,
+  setValidationResult,
   getExtras,
   flatRootErrors,
   isValid,
@@ -84,32 +84,24 @@ export default class ObjectField<T: {}> extends React.Component<
     validation: () => [],
   };
 
-  unregisterValidation = () => {};
-
-  _initialValidate() {
-    const {
-      link: {formState, onValidation},
-      validation,
-    } = this.props;
-    const [value] = formState;
-    const {errors} = getExtras(formState);
-
-    if (errors.client === "pending") {
-      onValidation([], validation(value));
-    }
-  }
+  validationFnOps: ValidationOps<T> = validationFnNoops();
 
   componentDidMount() {
-    this.unregisterValidation = this.context.registerValidation(
+    this.validationFnOps = this.context.registerValidation(
       this.props.link.path,
       this.props.validation
     );
+  }
 
-    this._initialValidate();
+  componentDidUpdate(prevProps: Props<T>) {
+    if (prevProps.validation !== this.props.validation) {
+      this.validationFnOps.replace(prevProps.validation, this.props.validation);
+    }
   }
 
   componentWillUnmount() {
-    this.unregisterValidation();
+    this.validationFnOps.unregister();
+    this.validationFnOps = validationFnNoops();
   }
 
   _handleChildChange: <V>(string, FormState<V>) => void = <V>(
@@ -140,8 +132,12 @@ export default class ObjectField<T: {}> extends React.Component<
         nextFormState
       );
     } else {
+      const errors = this.context.validateAtPath(
+        this.props.link.path,
+        newValue
+      );
       const nextFormState = setChanged(newFormState);
-      validatedFormState = validate(this.props.validation, nextFormState);
+      validatedFormState = setValidationResult(errors, nextFormState);
     }
     this.props.link.onChange(validatedFormState);
   };

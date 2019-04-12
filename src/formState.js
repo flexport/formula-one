@@ -15,7 +15,7 @@ import {
   treeFromValue,
 } from "./shapedTree";
 import {cleanMeta, cleanErrors} from "./types";
-import type {Extras, ClientErrors, Validation, ServerErrors} from "./types";
+import type {Extras, ServerErrors} from "./types";
 import {replaceAt} from "./utils/array";
 import invariant from "./utils/invariant";
 
@@ -80,23 +80,22 @@ export function arrayChild<E>(
   return [value[index], shapedArrayChild(index, tree)];
 }
 
-export function validate<T>(
-  validation: Validation<T>,
+export function setValidationResult<T>(
+  errors: Array<string>,
   formState: FormState<T>
 ): FormState<T> {
   const [value, tree] = formState;
-  const newErrors = validation(value);
   return [
     value,
     mapRoot(
       ({meta}) => ({
         errors: {
-          client: newErrors,
+          client: errors,
           server: "unchecked",
         },
         meta: {
           ...meta,
-          succeeded: meta.succeeded || newErrors.length === 0,
+          succeeded: meta.succeeded || errors.length === 0,
         },
       }),
       tree
@@ -122,22 +121,6 @@ export function setTouched<T>(formState: FormState<T>): FormState<T> {
     formState[0],
     mapRoot(
       ({errors, meta}) => ({errors, meta: {...meta, touched: true}}),
-      formState[1]
-    ),
-  ];
-}
-
-export function setClientErrors<T>(
-  newErrors: ClientErrors,
-  formState: FormState<T>
-): FormState<T> {
-  return [
-    formState[0],
-    mapRoot(
-      ({errors, meta}) => ({
-        errors: {...errors, client: newErrors},
-        meta,
-      }),
       formState[1]
     ),
   ];
