@@ -3,13 +3,13 @@
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
 import {FormContext} from "../Form";
-import FeedbackStrategies from "../feedbackStrategies";
 import ObjectField from "../ObjectField";
 import Form from "../Form";
 import {type FieldLink} from "../types";
 
 import {expectLink, mockLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
+import TestForm from "./TestForm";
 
 describe("ObjectField", () => {
   describe("Sneaky hacks", () => {
@@ -56,20 +56,11 @@ describe("ObjectField", () => {
       }));
 
       const renderer = TestRenderer.create(
-        <FormContext.Provider
-          value={{
-            shouldShowError: FeedbackStrategies.Always,
-            registerValidation,
-            validateFormStateAtPath: jest.fn(),
-            validateAtPath: jest.fn(),
-            pristine: true,
-            submitted: false,
-          }}
-        >
+        <TestForm registerValidation={registerValidation}>
           <ObjectField link={link} validation={jest.fn(() => [])}>
             {jest.fn(() => null)}
           </ObjectField>
-        </FormContext.Provider>
+        </TestForm>
       );
 
       expect(registerValidation).toBeCalledTimes(1);
@@ -84,32 +75,23 @@ describe("ObjectField", () => {
         unregister: jest.fn(),
       }));
 
-      function TestForm() {
+      function Component() {
         return (
-          <FormContext.Provider
-            value={{
-              shouldShowError: FeedbackStrategies.Always,
-              registerValidation,
-              validateFormStateAtPath: jest.fn(),
-              validateAtPath: jest.fn(),
-              pristine: true,
-              submitted: false,
-            }}
-          >
+          <TestForm registerValidation={registerValidation}>
             <ObjectField
               link={mockLink(mockFormState({hello: "world"}))}
               validation={() => []}
             >
               {() => null}
             </ObjectField>
-          </FormContext.Provider>
+          </TestForm>
         );
       }
 
-      const renderer = TestRenderer.create(<TestForm />);
+      const renderer = TestRenderer.create(<Component />);
       expect(registerValidation).toBeCalledTimes(1);
 
-      renderer.update(<TestForm />);
+      renderer.update(<Component />);
       expect(replace).toBeCalledTimes(1);
     });
 
@@ -303,18 +285,7 @@ describe("ObjectField", () => {
       }));
 
       TestRenderer.create(
-        <FormContext.Provider
-          value={{
-            shouldShowError: FeedbackStrategies.Always,
-            registerValidation: jest.fn(),
-            validateFormStateAtPath: jest.fn(
-              (_subtreePath, formState) => formState
-            ),
-            validateAtPath: jest.fn(),
-            pristine: true,
-            submitted: false,
-          }}
-        >
+        <TestForm>
           <ObjectField
             link={link}
             validation={jest.fn(() => ["This is an error"])}
@@ -322,7 +293,7 @@ describe("ObjectField", () => {
           >
             {renderFn}
           </ObjectField>
-        </FormContext.Provider>
+        </TestForm>
       );
 
       const objectLinks = renderFn.mock.calls[0][0];

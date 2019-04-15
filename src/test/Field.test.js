@@ -3,12 +3,11 @@
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
 
-import {FormContext} from "../Form";
-import FeedbackStrategies from "../feedbackStrategies";
 import Field from "../Field";
 import {type FieldLink} from "../types";
 import {mockFormState, mockLink} from "./tools";
 import TestField, {TestInput} from "./TestField";
+import TestForm from "./TestForm";
 import {mapRoot} from "../shapedTree";
 
 describe("Field", () => {
@@ -36,20 +35,11 @@ describe("Field", () => {
     }));
 
     const renderer = TestRenderer.create(
-      <FormContext.Provider
-        value={{
-          shouldShowError: FeedbackStrategies.Always,
-          registerValidation,
-          validateFormStateAtPath: jest.fn(),
-          validateAtPath: jest.fn(),
-          pristine: true,
-          submitted: false,
-        }}
-      >
+      <TestForm registerValidation={registerValidation}>
         <Field link={link} validation={jest.fn(() => [])}>
           {jest.fn(() => null)}
         </Field>
-      </FormContext.Provider>
+      </TestForm>
     );
 
     expect(registerValidation).toBeCalledTimes(1);
@@ -64,32 +54,23 @@ describe("Field", () => {
       unregister: jest.fn(),
     }));
 
-    function TestForm() {
+    function Component() {
       return (
-        <FormContext.Provider
-          value={{
-            shouldShowError: FeedbackStrategies.Always,
-            registerValidation,
-            validateFormStateAtPath: jest.fn(),
-            validateAtPath: jest.fn(),
-            pristine: true,
-            submitted: false,
-          }}
-        >
+        <TestForm registerValidation={registerValidation}>
           <Field
             link={mockLink(mockFormState("Hello world."))}
             validation={() => []}
           >
             {() => null}
           </Field>
-        </FormContext.Provider>
+        </TestForm>
       );
     }
 
-    const renderer = TestRenderer.create(<TestForm />);
+    const renderer = TestRenderer.create(<Component />);
     expect(registerValidation).toBeCalledTimes(1);
 
-    renderer.update(<TestForm />);
+    renderer.update(<Component />);
     expect(replace).toBeCalledTimes(1);
   });
 

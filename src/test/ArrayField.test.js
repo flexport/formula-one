@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
-import {FormContext} from "../Form";
-import FeedbackStrategies from "../feedbackStrategies";
 import Form from "../Form";
 import ArrayField from "../ArrayField";
 import {type FieldLink} from "../types";
 import TestField, {TestInput} from "./TestField";
+import TestForm from "./TestForm";
 
 import {expectLink, mockLink, mockFormState} from "./tools";
 
@@ -37,20 +36,11 @@ describe("ArrayField", () => {
       }));
 
       const renderer = TestRenderer.create(
-        <FormContext.Provider
-          value={{
-            shouldShowError: FeedbackStrategies.Always,
-            registerValidation,
-            validateFormStateAtPath: jest.fn(),
-            validateAtPath: jest.fn(),
-            pristine: true,
-            submitted: false,
-          }}
-        >
-          <ArrayField link={link} validation={jest.fn(() => [])}>
-            {jest.fn(() => null)}
+        <TestForm registerValidation={registerValidation}>
+          <ArrayField link={link} validation={() => []}>
+            {() => null}
           </ArrayField>
-        </FormContext.Provider>
+        </TestForm>
       );
 
       expect(registerValidation).toBeCalledTimes(1);
@@ -65,32 +55,23 @@ describe("ArrayField", () => {
         unregister: jest.fn(),
       }));
 
-      function TestForm() {
+      function Component() {
         return (
-          <FormContext.Provider
-            value={{
-              shouldShowError: FeedbackStrategies.Always,
-              registerValidation,
-              validateFormStateAtPath: jest.fn(),
-              validateAtPath: jest.fn(),
-              pristine: true,
-              submitted: false,
-            }}
-          >
+          <TestForm registerValidation={registerValidation}>
             <ArrayField
               link={mockLink(mockFormState(["hello", "world"]))}
               validation={() => []}
             >
               {() => null}
             </ArrayField>
-          </FormContext.Provider>
+          </TestForm>
         );
       }
 
-      const renderer = TestRenderer.create(<TestForm />);
+      const renderer = TestRenderer.create(<Component />);
       expect(registerValidation).toBeCalledTimes(1);
 
-      renderer.update(<TestForm />);
+      renderer.update(<Component />);
       expect(replace).toBeCalledTimes(1);
     });
 
@@ -515,18 +496,7 @@ describe("ArrayField", () => {
       ]);
 
       TestRenderer.create(
-        <FormContext.Provider
-          value={{
-            shouldShowError: FeedbackStrategies.Always,
-            registerValidation: jest.fn(),
-            validateFormStateAtPath: jest.fn(
-              (_subtreePath, formState) => formState
-            ),
-            validateAtPath: jest.fn(),
-            pristine: true,
-            submitted: false,
-          }}
-        >
+        <TestForm>
           <ArrayField
             link={link}
             validation={validation}
@@ -534,7 +504,7 @@ describe("ArrayField", () => {
           >
             {renderFn}
           </ArrayField>
-        </FormContext.Provider>
+        </TestForm>
       );
 
       const arrayLinks = renderFn.mock.calls[0][0];
