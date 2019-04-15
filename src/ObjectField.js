@@ -6,7 +6,6 @@ import type {
   FieldLink,
   Validation,
   Extras,
-  ClientErrors,
   AdditionalRenderInfo,
   CustomChange,
 } from "./types";
@@ -25,7 +24,6 @@ import {
 } from "./formState";
 import {
   type ShapedTree,
-  type ShapedPath,
   mapRoot,
   dangerouslyReplaceObjectChild,
 } from "./shapedTree";
@@ -48,8 +46,7 @@ function makeLinks<T: {}, V>(
   path: Path,
   formState: FormState<T>,
   onChildChange: (string, FormState<V>) => void,
-  onChildBlur: (string, ShapedTree<V, Extras>) => void,
-  onChildValidation: (string, ShapedPath<V>, ClientErrors) => void
+  onChildBlur: (string, ShapedTree<V, Extras>) => void
 ): Links<T> {
   const [value] = formState;
   return Object.keys(value).reduce((memo, k) => {
@@ -60,9 +57,6 @@ function makeLinks<T: {}, V>(
       },
       onBlur: childTree => {
         onChildBlur(k, childTree);
-      },
-      onValidation: (path, errors) => {
-        onChildValidation(k, path, errors);
       },
       path: [...path, {type: "object", key: k}],
     };
@@ -156,23 +150,6 @@ export default class ObjectField<T: {}> extends React.Component<
     );
   };
 
-  _handleChildValidation: <V>(string, ShapedPath<V>, ClientErrors) => void = <
-    V
-  >(
-    key: string,
-    childPath: ShapedPath<V>,
-    errors: ClientErrors
-  ) => {
-    const extendedPath = [
-      {
-        type: "object",
-        key,
-      },
-      ...childPath,
-    ];
-    this.props.link.onValidation(extendedPath, errors);
-  };
-
   render() {
     const {formState} = this.props.link;
     const {shouldShowError} = this.context;
@@ -181,8 +158,7 @@ export default class ObjectField<T: {}> extends React.Component<
       this.props.link.path,
       this.props.link.formState,
       this._handleChildChange,
-      this._handleChildBlur,
-      this._handleChildValidation
+      this._handleChildBlur
     );
     return (
       <React.Fragment>

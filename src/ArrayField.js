@@ -6,14 +6,12 @@ import type {
   FieldLink,
   Validation,
   Extras,
-  ClientErrors,
   AdditionalRenderInfo,
   CustomChange,
 } from "./types";
 import {cleanErrors, cleanMeta} from "./types";
 import {
   type ShapedTree,
-  type ShapedPath,
   treeFromValue,
   dangerouslyReplaceArrayChild,
   mapRoot,
@@ -75,8 +73,7 @@ function makeLinks<E>(
   path: Path,
   formState: FormState<Array<E>>,
   onChildChange: (number, FormState<E>) => void,
-  onChildBlur: (number, ShapedTree<E, Extras>) => void,
-  onChildValidation: (number, ShapedPath<E>, ClientErrors) => void
+  onChildBlur: (number, ShapedTree<E, Extras>) => void
 ): Links<E> {
   const [oldValue] = formState;
   return oldValue.map((x, i) => {
@@ -87,9 +84,6 @@ function makeLinks<E>(
       },
       onBlur: childTree => {
         onChildBlur(i, childTree);
-      },
-      onValidation: (childPath, clientErrors) => {
-        onChildValidation(i, childPath, clientErrors);
       },
       path: [...path, {type: "array", index: i}],
     };
@@ -172,21 +166,6 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
         dangerouslyReplaceArrayChild(index, childTree, tree)
       )
     );
-  };
-
-  _handleChildValidation: (number, ShapedPath<E>, ClientErrors) => void = (
-    index,
-    childPath,
-    errors
-  ) => {
-    const extendedPath = [
-      {
-        type: "array",
-        index,
-      },
-      ...childPath,
-    ];
-    this.props.link.onValidation(extendedPath, errors);
   };
 
   _addChildField: (number, E) => void = (index: number, childValue: E) => {
@@ -339,8 +318,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       path,
       formState,
       this._handleChildChange,
-      this._handleChildBlur,
-      this._handleChildValidation
+      this._handleChildBlur
     );
     return (
       <React.Fragment>

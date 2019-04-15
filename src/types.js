@@ -59,7 +59,6 @@ export type FieldLink<T> = {|
   +formState: FormState<T>,
   +onChange: OnChange<T>,
   +onBlur: OnBlur<T>,
-  +onValidation: OnValidation<T>,
   +path: Path,
 |};
 

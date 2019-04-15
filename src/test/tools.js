@@ -18,7 +18,7 @@ export function mockFormState<T>(value: T): FormState<T> {
 export function expectLink(link: any) {
   expect(link).toEqual(
     expect.objectContaining({
-      // TODO(dmnd): Find an issue for this bullshit
+      // TODO(dmnd): Would be nice if we could do something like
       // path: expect.arrayContaining(
       //   expect.objectContaining({
       //     type: expect.stringMatching(/(object)|(array)/),
@@ -28,10 +28,9 @@ export function expectLink(link: any) {
       formState: expect.anything(),
       onChange: expect.any(Function),
       onBlur: expect.any(Function),
-      onValidation: expect.any(Function),
     })
   );
-  expect(Object.keys(link).length).toBe(5);
+  expect(Object.keys(link).length).toBe(4);
 }
 
 export function mockLink<T>(formState: FormState<T>): FieldLink<T> {
@@ -40,6 +39,5 @@ export function mockLink<T>(formState: FormState<T>): FieldLink<T> {
     formState,
     onChange: jest.fn(),
     onBlur: jest.fn(),
-    onValidation: jest.fn(),
   };
 }

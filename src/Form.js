@@ -7,10 +7,8 @@ import {equals as arrayEquals} from "./utils/array";
 import type {
   MetaField,
   OnBlur,
-  OnValidation,
   Extras,
   FieldLink,
-  ClientErrors,
   AdditionalRenderInfo,
 } from "./types";
 import {
@@ -22,7 +20,6 @@ import {
 } from "./formState";
 import {
   type ShapedTree,
-  type ShapedPath,
   shapePath,
   updateAtPath,
   mapShapedTree,
@@ -353,28 +350,6 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     });
   };
 
-  _handleValidation: OnValidation<T> = (
-    path: ShapedPath<T>,
-    errors: ClientErrors
-  ) => {
-    // TODO(zach): Move this into formState.js, it is gross
-    const updater = newErrors => ({errors, meta}) => ({
-      errors: {...errors, client: newErrors},
-      meta: {
-        ...meta,
-        succeeded: newErrors.length === 0 ? true : meta.succeeded,
-      },
-    });
-    this.setState(
-      ({formState: [value, tree]}) => ({
-        formState: [value, updateAtPath(path, updater(errors), tree)],
-      }),
-      () => {
-        this.props.onValidation(isValid(this.state.formState));
-      }
-    );
-  };
-
   /**
    * Keeps validation errors from becoming stale when validation functions of
    * children change.
@@ -484,7 +459,6 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
             formState,
             onChange: this._handleChange,
             onBlur: this._handleBlur,
-            onValidation: this._handleValidation,
             path: [],
           },
           this._handleSubmit,
