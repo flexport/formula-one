@@ -26,7 +26,7 @@ describe("Field", () => {
     </Field>;
   });
 
-  it("Registers and unregisters for validation", () => {
+  it("registers and unregisters for validation", () => {
     const formState = mockFormState("Hello world.");
     const link = mockLink(formState);
     const unregister = jest.fn();
@@ -55,6 +55,42 @@ describe("Field", () => {
     expect(registerValidation).toBeCalledTimes(1);
     renderer.unmount();
     expect(unregister).toBeCalledTimes(1);
+  });
+
+  it("calls replace when changing the validation function", () => {
+    const replace = jest.fn();
+    const registerValidation = jest.fn(() => ({
+      replace,
+      unregister: jest.fn(),
+    }));
+
+    function TestForm() {
+      return (
+        <FormContext.Provider
+          value={{
+            shouldShowError: FeedbackStrategies.Always,
+            registerValidation,
+            validateFormStateAtPath: jest.fn(),
+            validateAtPath: jest.fn(),
+            pristine: true,
+            submitted: false,
+          }}
+        >
+          <Field
+            link={mockLink(mockFormState("Hello world."))}
+            validation={() => []}
+          >
+            {() => null}
+          </Field>
+        </FormContext.Provider>
+      );
+    }
+
+    const renderer = TestRenderer.create(<TestForm />);
+    expect(registerValidation).toBeCalledTimes(1);
+
+    renderer.update(<TestForm />);
+    expect(replace).toBeCalledTimes(1);
   });
 
   it("calls the link onChange with new values and correct meta", () => {

@@ -12,7 +12,7 @@ import TestField, {TestInput} from "./TestField";
 import {expectLink, mockLink, mockFormState} from "./tools";
 
 describe("ArrayField", () => {
-  describe("ArrayField is a field", () => {
+  describe("is a field", () => {
     it("ensures that the link inner type matches the type of the validation", () => {
       const formState = mockFormState(["one", "two", "three"]);
       const link = mockLink(formState);
@@ -56,6 +56,42 @@ describe("ArrayField", () => {
       expect(registerValidation).toBeCalledTimes(1);
       renderer.unmount();
       expect(unregister).toBeCalledTimes(1);
+    });
+
+    it("calls replace when changing the validation function", () => {
+      const replace = jest.fn();
+      const registerValidation = jest.fn(() => ({
+        replace,
+        unregister: jest.fn(),
+      }));
+
+      function TestForm() {
+        return (
+          <FormContext.Provider
+            value={{
+              shouldShowError: FeedbackStrategies.Always,
+              registerValidation,
+              validateFormStateAtPath: jest.fn(),
+              validateAtPath: jest.fn(),
+              pristine: true,
+              submitted: false,
+            }}
+          >
+            <ArrayField
+              link={mockLink(mockFormState(["hello", "world"]))}
+              validation={() => []}
+            >
+              {() => null}
+            </ArrayField>
+          </FormContext.Provider>
+        );
+      }
+
+      const renderer = TestRenderer.create(<TestForm />);
+      expect(registerValidation).toBeCalledTimes(1);
+
+      renderer.update(<TestForm />);
+      expect(replace).toBeCalledTimes(1);
     });
 
     it("Passes additional information to its render function", () => {
