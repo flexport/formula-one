@@ -29,7 +29,7 @@ import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
 
 export type ValidationOps<T> = {
   unregister: () => void,
-  replace: (prevFn: (T) => Array<string>, nextFn: (T) => Array<string>) => void,
+  replace: (fn: (T) => Array<string>) => void,
 };
 
 export function validationFnNoops<T>(): ValidationOps<T> {
@@ -375,8 +375,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     this.validations.set(encodedPath, map);
 
     return {
-      replace: (oldFn, newFn) =>
-        this.replaceValidation(path, fieldId, oldFn, newFn),
+      replace: fn => this.replaceValidation(path, fieldId, fn),
       unregister: () => this.unregisterValidation(path, fieldId),
     };
   };
@@ -384,29 +383,20 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   replaceValidation = (
     path: Path,
     fieldId: number,
-    oldFn: mixed => Array<string>,
-    newFn: mixed => Array<string>
+    fn: mixed => Array<string>
   ) => {
-    // Sanity check in case caller didn't do it
-    if (oldFn === newFn) {
-      return;
-    }
-
     const encodedPath = encodePath(path);
     const map = this.validations.get(encodedPath);
-    invariant(map != null, "Expected to find handler map during replace");
+    invariant(map != null, "Expected to find handler map");
 
-    const storedOldFn = map.get(fieldId);
-    invariant(
-      oldFn === storedOldFn,
-      "Component passed incorrect existing validation function"
-    );
-    map.set(fieldId, newFn);
+    const oldFn = map.get(fieldId);
+    invariant(oldFn != null, "Expected to find previous validation function");
+    map.set(fieldId, fn);
 
     // Now that the old validation is gone, make sure there are no left over
     // errors from it.
     const value = getValueAtPath(path, this.state.formState[0]);
-    if (arrayEquals(oldFn(value), newFn(value))) {
+    if (arrayEquals(oldFn(value), fn(value))) {
       // The errors haven't changed, so don't bother calling setState.
       // You might think this is a silly performance optimization but actually
       // we need this for annoying React reasons:

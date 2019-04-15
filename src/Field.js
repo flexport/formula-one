@@ -52,7 +52,7 @@ export default class Field<T> extends React.Component<Props<T>> {
 
   componentDidUpdate(prevProps: Props<T>) {
     if (prevProps.validation !== this.props.validation) {
-      this.validationFnOps.replace(prevProps.validation, this.props.validation);
+      this.validationFnOps.replace(this.props.validation);
     }
   }
 

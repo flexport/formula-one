@@ -107,7 +107,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
 
   componentDidUpdate(prevProps: Props<E>) {
     if (prevProps.validation !== this.props.validation) {
-      this.validationFnOps.replace(prevProps.validation, this.props.validation);
+      this.validationFnOps.replace(this.props.validation);
     }
   }
 
