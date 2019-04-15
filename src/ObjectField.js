@@ -126,7 +126,8 @@ export default class ObjectField<T: {}> extends React.Component<
       // TODO(zach): It's kind of gross that this is happening outside of Form.
       const nextFormState = changedFormState(customValue);
 
-      // Sibling nodes changed, so validate the entire subtree.
+      // A custom change occurred, which means the whole object needs to be
+      // revalidated.
       validatedFormState = this.context.validateFormStateAtPath(
         this.props.link.path,
         nextFormState

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import invariant from "./utils/invariant";
+import {equals as arrayEquals} from "./utils/array";
 
 import type {
   MetaField,
@@ -131,6 +132,7 @@ function encodePath(path: Path): EncodedPath {
         } else if (p.type === "array") {
           return `a>${p.index}`;
         } else {
+          (p.type: empty); // eslint-disable-line no-unused-expressions
           throw new Error(`Bad path type ${p.type}`);
         }
       })
@@ -236,21 +238,6 @@ function validateAtPath(
     (errors, validationFn) => errors.concat(validationFn(value)),
     []
   );
-}
-
-function arrayEqual(
-  a: $ReadOnlyArray<mixed>,
-  b: $ReadOnlyArray<mixed>
-): boolean {
-  if (a.length !== b.length) {
-    return false;
-  }
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return false;
-    }
-  }
-  return true;
 }
 
 type Props<T, ExtraSubmitData> = {|
@@ -444,7 +431,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     // Now that the old validation is gone, make sure there are no left over
     // errors from it.
     const value = getValueAtPath(path, this.state.formState[0]);
-    if (arrayEqual(oldFn(value), newFn(value))) {
+    if (arrayEquals(oldFn(value), newFn(value))) {
       // The errors haven't changed, so don't bother calling setState.
       // You might think this is a silly performance optimization but actually
       // we need this for annoying React reasons:
