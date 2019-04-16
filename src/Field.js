@@ -4,13 +4,7 @@ import * as React from "react";
 import type {FieldLink, Validation, Err, AdditionalRenderInfo} from "./types";
 import {mapRoot} from "./shapedTree";
 import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
-import {
-  setExtrasTouched,
-  getExtras,
-  setChanged,
-  setValidationResult,
-  isValid,
-} from "./formState";
+import {setExtrasTouched, getExtras, isValid} from "./formState";
 
 type Props<T> = {|
   +link: FieldLink<T>,
@@ -62,12 +56,16 @@ export default class Field<T> extends React.Component<Props<T>> {
   }
 
   onChange: T => void = (newValue: T) => {
-    const [_, oldTree] = this.props.link.formState;
-    const errors = this.context.validateAtPath(this.props.link.path, newValue);
-
-    this.props.link.onChange(
-      setChanged(setValidationResult(errors, [newValue, oldTree]))
-    );
+    const {
+      path,
+      formState: [_, oldTree],
+      onChange,
+    } = this.props.link;
+    const newFormState = this.context.applyValidationAtPath(path, [
+      newValue,
+      oldTree,
+    ]);
+    onChange(newFormState);
   };
 
   onBlur = () => {

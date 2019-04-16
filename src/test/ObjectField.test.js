@@ -184,30 +184,41 @@ describe("ObjectField", () => {
       </ObjectField>;
     });
 
-    it("calls onChange when a child changes", () => {
-      const formStateInner = {
+    it("validates new values from children and passes result to onChange", () => {
+      const formState = mockFormState({
         string: "hello",
         number: 42,
-      };
-      const formState = mockFormState(formStateInner);
+      });
       const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
 
-      TestRenderer.create(<ObjectField link={link}>{renderFn}</ObjectField>);
+      const applyValidationAtPath = jest.fn((path, formState) => formState);
 
-      const objectLinks = renderFn.mock.calls[0][0];
+      TestRenderer.create(
+        <TestForm applyValidationAtPath={applyValidationAtPath}>
+          <ObjectField link={link}>{renderFn}</ObjectField>
+        </TestForm>
+      );
+
+      expect(applyValidationAtPath).toHaveBeenCalledTimes(0);
+      expect(link.onChange).toHaveBeenCalledTimes(0);
+
       // call the child onChange
+      const objectLinks = renderFn.mock.calls[0][0];
       const newChildMeta = mockFormState("newString");
       objectLinks.string.onChange(newChildMeta);
 
-      expect(link.onChange).toHaveBeenCalled();
-      const newObjectFormState = link.onChange.mock.calls[0][0];
-      expect(newObjectFormState[0]).toHaveProperty("string", "newString");
-      expect(newObjectFormState[1].data.meta).toMatchObject({
-        touched: true,
-        changed: true,
-      });
-      expect(newObjectFormState[1].children.string).toBe(newChildMeta[1]);
+      expect(applyValidationAtPath).toHaveBeenCalledTimes(1);
+      expect(applyValidationAtPath).toHaveBeenCalledWith(
+        [],
+        [{string: "newString", number: 42}, expect.anything()]
+      );
+
+      expect(link.onChange).toHaveBeenCalledTimes(1);
+      expect(link.onChange).toHaveBeenCalledWith([
+        {string: "newString", number: 42},
+        formState[1],
+      ]);
     });
 
     it("calls onBlur when a child is blurred", () => {

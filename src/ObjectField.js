@@ -12,11 +12,9 @@ import type {
 import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
 import {
   type FormState,
-  setChanged,
   replaceObjectChild,
   setExtrasTouched,
   objectChild,
-  setValidationResult,
   getExtras,
   flatRootErrors,
   isValid,
@@ -122,17 +120,15 @@ export default class ObjectField<T: {}> extends React.Component<
 
       // A custom change occurred, which means the whole object needs to be
       // revalidated.
-      validatedFormState = this.context.validateFormStateAtPath(
+      validatedFormState = this.context.applyValidationToTreeAtPath(
         this.props.link.path,
         nextFormState
       );
     } else {
-      const errors = this.context.validateAtPath(
+      validatedFormState = this.context.applyValidationAtPath(
         this.props.link.path,
-        newValue
+        newFormState
       );
-      const nextFormState = setChanged(newFormState);
-      validatedFormState = setValidationResult(errors, nextFormState);
     }
     this.props.link.onChange(validatedFormState);
   };

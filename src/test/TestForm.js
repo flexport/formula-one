@@ -5,7 +5,7 @@ import * as React from "react";
 import {FormContext, type FormContextPayload} from "../Form";
 
 type Props = {
-  ...FormContextPayload,
+  ...$Shape<{...FormContextPayload}>,
   children: React.Node,
 };
 
@@ -15,8 +15,8 @@ export default function TestForm({
   pristine = false,
   submitted = true,
   registerValidation = () => ({replace: () => {}, unregister: () => {}}),
-  validateFormStateAtPath = (path, x) => x,
-  validateAtPath = () => [],
+  applyValidationToTreeAtPath = (path, formState) => formState,
+  applyValidationAtPath = (path, formState) => formState,
 }: Props = {}) {
   return (
     <FormContext.Provider
@@ -25,8 +25,8 @@ export default function TestForm({
         pristine,
         submitted,
         registerValidation,
-        validateFormStateAtPath,
-        validateAtPath,
+        applyValidationToTreeAtPath,
+        applyValidationAtPath,
       }}
     >
       {children}

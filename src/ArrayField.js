@@ -31,11 +31,8 @@ import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
 import {
   type FormState,
   replaceArrayChild,
-  setTouched,
-  setChanged,
   setExtrasTouched,
   arrayChild,
-  setValidationResult,
   getExtras,
   flatRootErrors,
   isValid,
@@ -140,17 +137,15 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
 
       // A custom change occurred, which means the whole array needs to be
       // revalidated.
-      validatedFormState = this.context.validateFormStateAtPath(
+      validatedFormState = this.context.applyValidationToTreeAtPath(
         this.props.link.path,
         nextFormState
       );
     } else {
-      const errors = this.context.validateAtPath(
+      validatedFormState = this.context.applyValidationAtPath(
         this.props.link.path,
-        newValue
+        newFormState
       );
-      const nextFormState = setChanged(newFormState);
-      validatedFormState = setValidationResult(errors, nextFormState);
     }
     this.props.link.onChange(validatedFormState);
   };
@@ -166,6 +161,14 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
         dangerouslyReplaceArrayChild(index, childTree, tree)
       )
     );
+  };
+
+  _validateThenApplyChange = <E>(formState: FormState<Array<E>>) => {
+    const validatedFormState = this.context.applyValidationAtPath(
+      this.props.link.path,
+      formState
+    );
+    this.props.link.onChange(validatedFormState);
   };
 
   _addChildField: (number, E) => void = (index: number, childValue: E) => {
@@ -184,11 +187,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       ),
       oldTree
     );
-
-    const errors = this.context.validateAtPath(this.props.link.path, newValue);
-    this.props.link.onChange(
-      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
-    );
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   _addChildFields: (
@@ -212,10 +211,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    const errors = this.context.validateAtPath(this.props.link.path, newValue);
-    this.props.link.onChange(
-      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
-    );
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   _filterChildFields: (
@@ -231,10 +227,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
     const newTree = dangerouslySetChildren(newChildren, oldTree);
 
-    const errors = this.context.validateAtPath(this.props.link.path, newValue);
-    this.props.link.onChange(
-      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
-    );
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   _modifyChildFields: ({
@@ -275,10 +268,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
     const newTree = dangerouslySetChildren(newChildren, oldTree);
 
-    const errors = this.context.validateAtPath(this.props.link.path, newValue);
-    this.props.link.onChange(
-      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
-    );
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   _removeChildField = (index: number) => {
@@ -290,10 +280,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    const errors = this.context.validateAtPath(this.props.link.path, newValue);
-    this.props.link.onChange(
-      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
-    );
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   _moveChildField = (from: number, to: number) => {
@@ -304,10 +291,8 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       moveFromTo(from, to, shapedArrayChildren(oldTree)),
       oldTree
     );
-    const errors = this.context.validateAtPath(this.props.link.path, newValue);
-    this.props.link.onChange(
-      setValidationResult(errors, setChanged(setTouched([newValue, newTree])))
-    );
+
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   render() {

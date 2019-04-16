@@ -142,26 +142,38 @@ describe("ArrayField", () => {
       </ArrayField>;
     });
 
-    it("calls onChange when a child changes", () => {
-      const formStateValue = ["one", "two", "three"];
-      const formState = mockFormState(formStateValue);
+    it("validates new values from children and passes result to onChange", () => {
+      const formState = mockFormState(["one", "two", "three"]);
       const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
 
-      TestRenderer.create(<ArrayField link={link}>{renderFn}</ArrayField>);
+      const applyValidationAtPath = jest.fn((path, formState) => formState);
 
+      TestRenderer.create(
+        <TestForm applyValidationAtPath={applyValidationAtPath}>
+          <ArrayField link={link}>{renderFn}</ArrayField>
+        </TestForm>
+      );
+
+      expect(applyValidationAtPath).toHaveBeenCalledTimes(0);
+      expect(link.onChange).toHaveBeenCalledTimes(0);
+
+      // call a child's onChange
       const arrayLinks = renderFn.mock.calls[0][0];
       const newElementFormState = mockFormState("newTwo");
       arrayLinks[1].onChange(newElementFormState);
 
-      expect(link.onChange).toHaveBeenCalled();
-      const newArrayFormState = link.onChange.mock.calls[0][0];
-      expect(newArrayFormState[0]).toEqual(["one", "newTwo", "three"]);
-      expect(newArrayFormState[1].data.meta).toMatchObject({
-        touched: true,
-        changed: true,
-      });
-      expect(newArrayFormState[1].children[1]).toBe(newElementFormState[1]);
+      expect(applyValidationAtPath).toHaveBeenCalledTimes(1);
+      expect(applyValidationAtPath).toHaveBeenCalledWith(
+        [],
+        [["one", "newTwo", "three"], expect.anything()]
+      );
+
+      expect(link.onChange).toHaveBeenCalledTimes(1);
+      expect(link.onChange).toHaveBeenCalledWith([
+        ["one", "newTwo", "three"],
+        formState[1],
+      ]);
     });
 
     it("calls onBlur when a child is blurred", () => {

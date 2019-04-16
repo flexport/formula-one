@@ -74,26 +74,35 @@ describe("Field", () => {
     expect(replace).toBeCalledTimes(1);
   });
 
-  it("calls the link onChange with new values and correct meta", () => {
+  it("validates new values and passes result to onChange", () => {
     const formState = mockFormState("Hello world.");
     const link = mockLink(formState);
 
-    const renderer = TestRenderer.create(<TestField link={link} />);
+    const applyValidationAtPath = jest.fn((path, formState) => formState);
+
+    const renderer = TestRenderer.create(
+      <TestForm applyValidationAtPath={applyValidationAtPath}>
+        <TestField link={link} />
+      </TestForm>
+    );
     const inner = renderer.root.findByType(TestInput);
 
+    expect(applyValidationAtPath).toHaveBeenCalledTimes(0);
     expect(link.onChange).toHaveBeenCalledTimes(0);
-    inner.instance.change("You've got mail");
-    expect(link.onChange).toHaveBeenCalledTimes(1);
 
-    const [value, tree] = link.onChange.mock.calls[0][0];
-    expect(value).toBe("You've got mail");
-    expect(tree.data).toMatchObject({
-      meta: {
-        touched: true,
-        changed: true,
-        succeeded: true,
-      },
-    });
+    inner.instance.change("You've got mail");
+
+    expect(applyValidationAtPath).toHaveBeenCalledTimes(1);
+    expect(applyValidationAtPath).toHaveBeenCalledWith(
+      [],
+      ["You've got mail", expect.anything()]
+    );
+
+    expect(link.onChange).toHaveBeenCalledTimes(1);
+    expect(link.onChange).toHaveBeenCalledWith([
+      "You've got mail",
+      formState[1],
+    ]);
   });
 
   it("calls the link onBlur with correct meta", () => {

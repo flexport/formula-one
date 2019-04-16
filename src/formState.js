@@ -80,42 +80,6 @@ export function arrayChild<E>(
   return [value[index], shapedArrayChild(index, tree)];
 }
 
-export function setValidationResult<T>(
-  errors: Array<string>,
-  formState: FormState<T>
-): FormState<T> {
-  const [value, tree] = formState;
-  return [
-    value,
-    mapRoot(
-      ({meta}) => ({
-        errors: {
-          client: errors,
-          server: "unchecked",
-        },
-        meta: {
-          ...meta,
-          succeeded: meta.succeeded || errors.length === 0,
-        },
-      }),
-      tree
-    ),
-  ];
-}
-
-export function setChanged<T>(formState: FormState<T>): FormState<T> {
-  return [
-    formState[0],
-    mapRoot(
-      ({errors, meta}) => ({
-        errors,
-        meta: {...meta, touched: true, changed: true},
-      }),
-      formState[1]
-    ),
-  ];
-}
-
 export function setTouched<T>(formState: FormState<T>): FormState<T> {
   return [
     formState[0],

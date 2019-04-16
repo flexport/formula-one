@@ -23,6 +23,7 @@ import {
   shapePath,
   updateAtPath,
   mapShapedTree,
+  mapRoot,
 } from "./shapedTree";
 import {pathFromPathString, type Path} from "./tree";
 import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
@@ -39,7 +40,7 @@ export function validationFnNoops<T>(): ValidationOps<T> {
   };
 }
 
-export type FormContextPayload = {
+export type FormContextPayload = {|
   shouldShowError: (metaField: MetaField) => boolean,
   // These values are taken into account in shouldShowError, but are also
   // available in their raw form, for convenience.
@@ -49,17 +50,17 @@ export type FormContextPayload = {
     path: Path,
     fn: (mixed) => Array<string>
   ) => ValidationOps<mixed>,
-  validateFormStateAtPath: (Path, FormState<*>) => FormState<*>,
-  validateAtPath: (path: Path, value: mixed) => Array<string>,
-};
+  applyValidationToTreeAtPath: (Path, FormState<*>) => FormState<*>,
+  applyValidationAtPath: (Path, FormState<*>) => FormState<*>,
+|};
 export const FormContext: React.Context<FormContextPayload> = React.createContext(
   {
     shouldShowError: () => true,
     pristine: false,
     submitted: true,
     registerValidation: () => ({replace: () => {}, unregister: () => {}}),
-    validateFormStateAtPath: (path, x) => x,
-    validateAtPath: () => [],
+    applyValidationToTreeAtPath: (path, formState) => formState,
+    applyValidationAtPath: (path, formState) => formState,
   }
 );
 
@@ -177,7 +178,7 @@ function getValueAtPath(
   throw new Error("Path is too long");
 }
 
-function validateSubtree<T>(
+function applyValidationToTreeAtPath<T>(
   subtreePath: Path,
   formState: FormState<T>,
   validations: Map<string, Map<number, (mixed) => Array<string>>>
@@ -235,6 +236,32 @@ function validateAtPath(
     (errors, validationFn) => errors.concat(validationFn(value)),
     []
   );
+}
+
+function applyValidationAtPath<T>(
+  path: Path,
+  [value, tree]: FormState<T>,
+  validations: Map<string, Map<number, (mixed) => Array<string>>>
+): FormState<T> {
+  const errors = validateAtPath(path, value, validations);
+  return [
+    value,
+    mapRoot(
+      ({meta}) => ({
+        errors: {
+          client: errors,
+          server: "unchecked",
+        },
+        meta: {
+          ...meta,
+          succeeded: meta.succeeded || errors.length === 0,
+          touched: true,
+          changed: true,
+        },
+      }),
+      tree
+    ),
+  ];
 }
 
 type Props<T, ExtraSubmitData> = {|
@@ -309,8 +336,8 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     // Take care to use an updater to avoid clobbering changes from fields that
     // call onChange during cDM.
     this.setState(
-      prevState => ({
-        formState: validateSubtree([], prevState.formState, this.validations),
+      ({formState}) => ({
+        formState: applyValidationToTreeAtPath([], formState, this.validations),
       }),
       () => {
         this.props.onValidation(isValid(this.state.formState));
@@ -437,10 +464,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         value={{
           shouldShowError: this.props.feedbackStrategy.bind(null, metaForm),
           registerValidation: this.handleRegisterValidation,
-          validateFormStateAtPath: (path, formState) =>
-            validateSubtree(path, formState, this.validations),
-          validateAtPath: (path, value) =>
-            validateAtPath(path, value, this.validations),
+          applyValidationToTreeAtPath: (path, formState) =>
+            applyValidationToTreeAtPath(path, formState, this.validations),
+          applyValidationAtPath: (path, formState) =>
+            applyValidationAtPath(path, formState, this.validations),
           ...metaForm,
         }}
       >
