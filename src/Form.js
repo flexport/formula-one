@@ -26,6 +26,12 @@ import {
   mapRoot,
 } from "./shapedTree";
 import {pathFromPathString, type Path} from "./tree";
+import {
+  startsWith,
+  encodePath,
+  decodePath,
+  type EncodedPath,
+} from "./EncodedPath";
 import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
 
 export type ValidationOps<T> = {
@@ -117,43 +123,6 @@ function applyServerErrorsToFormState<T>(
   return [value, tree];
 }
 
-// TODO(dmnd): Unit tests, perhaps combine with existing implementation?
-type EncodedPath = string;
-
-function encodePath(path: Path): EncodedPath {
-  return (
-    "/" +
-    path
-      .map(p => {
-        if (p.type === "object") {
-          return `o>${p.key}`;
-        } else if (p.type === "array") {
-          return `a>${p.index}`;
-        } else {
-          (p.type: empty); // eslint-disable-line no-unused-expressions
-          throw new Error(`Bad path type ${p.type}`);
-        }
-      })
-      .join("/")
-  );
-}
-
-function decodePath(s: EncodedPath): Path {
-  return s
-    .split("/")
-    .filter(x => x !== "")
-    .map(s => {
-      const [type, val] = s.split(">");
-      if (type === "o") {
-        return {type: "object", key: val};
-      } else if (type === "a") {
-        return {type: "array", index: parseInt(val, 10)};
-      } else {
-        throw new Error(`Bad encoded path type '${type}' for path '${s}'`);
-      }
-    });
-}
-
 function getValueAtPath(
   path: Path,
   value: mixed | number | string | null | void
@@ -181,10 +150,10 @@ function getValueAtPath(
 function applyValidationToTreeAtPath<T>(
   subtreePath: Path,
   formState: FormState<T>,
-  validations: Map<string, Map<number, (mixed) => Array<string>>>
+  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): FormState<T> {
   const newTree = [...validations.entries()]
-    .filter(([path]) => path.startsWith(encodePath(subtreePath)))
+    .filter(([path]) => startsWith(path, subtreePath))
     .map(([path, validationsMap]) => {
       const parsedPath = decodePath(path);
       const val = getValueAtPath(parsedPath, formState[0]);
@@ -225,7 +194,7 @@ function nextFieldId() {
 function validateAtPath(
   path: Path,
   value: mixed,
-  validations: Map<string, Map<number, (mixed) => Array<string>>>
+  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): Array<string> {
   const map = validations.get(encodePath(path));
   if (!map) {
@@ -241,7 +210,7 @@ function validateAtPath(
 function applyValidationAtPath<T>(
   path: Path,
   [value, tree]: FormState<T>,
-  validations: Map<string, Map<number, (mixed) => Array<string>>>
+  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): FormState<T> {
   const errors = validateAtPath(path, value, validations);
   return [
