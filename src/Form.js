@@ -129,10 +129,16 @@ function applyServerErrorsToFormState<T>(
   return [value, tree];
 }
 
-function getValueAtPath(
-  path: Path,
-  value: mixed | number | string | null | void
-) {
+type Value =
+  | mixed
+  | number
+  | string
+  | null
+  | void
+  | Array<Value>
+  | {[string]: Value};
+
+function getValueAtPath(path: Path, value: Value) {
   if (path.length === 0) {
     return value;
   }
@@ -145,7 +151,7 @@ function getValueAtPath(
     return getValueAtPath(rest, value[p.index]);
   } else if (p.type === "object") {
     invariant(
-      typeof value === "object" && value !== null,
+      typeof value === "object" && value !== null && !Array.isArray(value),
       "Path/value shape mismatch: expected object"
     );
     return getValueAtPath(rest, value[p.key]);
