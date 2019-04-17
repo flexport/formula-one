@@ -60,6 +60,8 @@ export type FormContextPayload = {|
     path: Path,
     fn: (mixed) => Array<string>
   ) => ValidationOps<mixed>,
+  // TODO(dmnd): Try to get rid of * here by writing a type-level function of
+  // Path and FormState<T>
   applyValidationToTreeAtPath: (Path, FormState<*>) => FormState<*>,
   applyValidationAtPath: (Path, FormState<*>) => FormState<*>,
 |};
