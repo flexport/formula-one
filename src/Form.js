@@ -357,14 +357,14 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
    * children change.
    */
   recomputeErrorsAtPathAndRender = (path: Path) => {
-    this.setState(({formState: [value, meta]}) => {
+    this.setState(({formState: [value, tree]}) => {
       const errors = validateAtPath(path, value, this.validations);
-      const updatedMeta = updateAtPath(
+      const updatedTree = updateAtPath(
         path,
         extras => ({...extras, errors: {...extras.errors, client: errors}}),
-        meta
+        tree
       );
-      return {formState: [value, updatedMeta]};
+      return {formState: [value, updatedTree]};
     });
   };
 
