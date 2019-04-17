@@ -39,11 +39,15 @@ export type ValidationOps<T> = {
   replace: (fn: (T) => Array<string>) => void,
 };
 
+const noOps = {
+  unregister() {},
+  replace() {},
+};
+
+// noOps can't be used directly because Flow doesn't typecheck a constant as
+// being parametric in T.
 export function validationFnNoOps<T>(): ValidationOps<T> {
-  return {
-    unregister() {},
-    replace() {},
-  };
+  return noOps;
 }
 
 export type FormContextPayload = {|
