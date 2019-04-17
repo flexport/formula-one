@@ -39,7 +39,7 @@ export type ValidationOps<T> = {
   replace: (fn: (T) => Array<string>) => void,
 };
 
-export function validationFnNoops<T>(): ValidationOps<T> {
+export function validationFnNoOps<T>(): ValidationOps<T> {
   return {
     unregister() {},
     replace() {},

@@ -3,7 +3,7 @@
 import * as React from "react";
 import type {FieldLink, Validation, Err, AdditionalRenderInfo} from "./types";
 import {mapRoot} from "./shapedTree";
-import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
+import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
 import {setExtrasTouched, getExtras, isValid} from "./formState";
 
 type Props<T> = {|
@@ -35,7 +35,7 @@ export default class Field<T> extends React.Component<Props<T>> {
   };
   static contextType = FormContext;
 
-  validationFnOps: ValidationOps<T> = validationFnNoops();
+  validationFnOps: ValidationOps<T> = validationFnNoOps();
 
   componentDidMount() {
     this.validationFnOps = this.context.registerValidation(
@@ -52,7 +52,7 @@ export default class Field<T> extends React.Component<Props<T>> {
 
   componentWillUnmount() {
     this.validationFnOps.unregister();
-    this.validationFnOps = validationFnNoops();
+    this.validationFnOps = validationFnNoOps();
   }
 
   onChange: T => void = (newValue: T) => {

@@ -9,7 +9,7 @@ import type {
   AdditionalRenderInfo,
   CustomChange,
 } from "./types";
-import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
+import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
 import {
   type FormState,
   replaceObjectChild,
@@ -76,7 +76,7 @@ export default class ObjectField<T: {}> extends React.Component<
     validation: () => [],
   };
 
-  validationFnOps: ValidationOps<T> = validationFnNoops();
+  validationFnOps: ValidationOps<T> = validationFnNoOps();
 
   componentDidMount() {
     this.validationFnOps = this.context.registerValidation(
@@ -93,7 +93,7 @@ export default class ObjectField<T: {}> extends React.Component<
 
   componentWillUnmount() {
     this.validationFnOps.unregister();
-    this.validationFnOps = validationFnNoops();
+    this.validationFnOps = validationFnNoOps();
   }
 
   _handleChildChange: <V>(string, FormState<V>) => void = <V>(

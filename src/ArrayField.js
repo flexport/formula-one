@@ -27,7 +27,7 @@ import {
   zip,
   unzip,
 } from "./utils/array";
-import {FormContext, type ValidationOps, validationFnNoops} from "./Form";
+import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
 import {
   type FormState,
   replaceArrayChild,
@@ -93,7 +93,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
   };
   static contextType = FormContext;
 
-  validationFnOps: ValidationOps<Array<E>> = validationFnNoops();
+  validationFnOps: ValidationOps<Array<E>> = validationFnNoOps();
 
   componentDidMount() {
     this.validationFnOps = this.context.registerValidation(
@@ -110,7 +110,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
 
   componentWillUnmount() {
     this.validationFnOps.unregister();
-    this.validationFnOps = validationFnNoops();
+    this.validationFnOps = validationFnNoOps();
   }
 
   _handleChildChange: (number, FormState<E>) => void = (
