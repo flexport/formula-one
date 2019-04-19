@@ -859,4 +859,86 @@ describe("Form", () => {
     expect(onValidation).toHaveBeenCalledTimes(2);
     expect(onValidation).toHaveBeenLastCalledWith(true);
   });
+
+  describe("performance", () => {
+    it("batches setState calls when unmounting components", () => {
+      // Record the number of render and commit phases
+      let renders = 0;
+      let commits = 0;
+      class RenderCalls extends React.Component<{||}> {
+        componentDidUpdate() {
+          commits += 1;
+        }
+
+        render() {
+          renders += 1;
+          return (
+            <div>
+              Rendered {renders} times, committed {commits} times.
+            </div>
+          );
+        }
+      }
+
+      const validation = jest.fn();
+
+      // N in the O(N) sense for this perf test.
+      const N = 10;
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={"A string"}>
+          {link => (
+            <>
+              <RenderCalls />
+              <>
+                {[...Array(N).keys()].map(i => (
+                  <Field key={i} link={link} validation={validation}>
+                    {() => <div>input</div>}
+                  </Field>
+                ))}
+              </>
+            </>
+          )}
+        </Form>
+      );
+
+      // One render for initial mount, and another after Form validates
+      // everything from componentDidMount.
+      // TODO(dmnd): Can we adjust implementation to make this only render once?
+      expect(renders).toBe(1 + 1);
+      expect(commits).toBe(1);
+      expect(validation).toBeCalledTimes(N);
+
+      renders = 0;
+      commits = 0;
+      validation.mockClear();
+
+      // now unmount all the fields
+      renderer.update(
+        <Form initialValue={"A string"}>
+          {() => (
+            <>
+              <RenderCalls />
+            </>
+          )}
+        </Form>
+      );
+
+      // We expect only two renders. The first to build the VDOM without Fields.
+      // Then during reconciliation React realizes the Fields have to unmount,
+      // so it calls componentWillUnmount on each Field, which then causes a
+      // setState for each Field. But then we expect that React batches all
+      // these setStates into a single render, not one render per each Field.
+      expect(renders).toBe(1 + 1);
+      expect(renders).not.toBe(1 + N);
+
+      // Similarly, we expect only 2 commits, not one for each Field. You might
+      // expect only a single commit, but componentWillUnmount happens during
+      // the commit phase, so when setState is called React enqueues another
+      // render phase which commits separately. Oh well. At least the number of
+      // commits is constant!
+      expect(commits).toBe(1 + 1);
+      expect(commits).not.toBe(1 + N);
+    });
+  });
 });
