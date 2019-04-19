@@ -159,22 +159,46 @@ function getValueAtPath(path: Path, value: Value) {
   throw new Error("Path is too long");
 }
 
+function pathSegmentEqual(
+  a: $ElementType<Path, number>,
+  b: $ElementType<Path, number>
+) {
+  return (
+    (a.type === "array" && b.type === "array" && a.index === b.index) ||
+    (a.type === "object" && b.type === "object" && a.key === b.key)
+  );
+}
+
+function getRelativePath(path: Path, prefix: Path) {
+  for (let i = 0; i < prefix.length; i++) {
+    invariant(
+      pathSegmentEqual(path[i], prefix[i]),
+      "Expect prefix to be a prefix of path"
+    );
+  }
+  return path.slice(prefix.length);
+}
+
 function applyValidationToTreeAtPath<T>(
-  subtreePath: Path,
-  formState: FormState<T>,
+  prefix: Path,
+  [value, tree]: FormState<T>,
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): FormState<T> {
   const newTree = [...validations.entries()]
-    .filter(([path]) => startsWith(path, subtreePath))
+    .filter(([path]) => startsWith(path, prefix))
     .map(([path, validationsMap]) => {
-      const parsedPath = decodePath(path);
-      const val = getValueAtPath(parsedPath, formState[0]);
+      // Note that value is not the root value, it's the value at this path.
+      // So convert absolute validation paths to relative before attempting to
+      // pull out the value on which to run them.
+      const relativePath = getRelativePath(decodePath(path), prefix);
+      const x = getValueAtPath(relativePath, value);
 
+      // Run all validation functions on x
       const errors = [...validationsMap.values()].reduce(
-        (errors, validationFn) => errors.concat(validationFn(val)),
+        (errors, validationFn) => errors.concat(validationFn(x)),
         []
       );
-      return [parsedPath, errors];
+      return [relativePath, errors];
     })
     .reduce(
       (tree, [path, newErrors]) =>
@@ -189,10 +213,10 @@ function applyValidationToTreeAtPath<T>(
           }),
           tree
         ),
-      formState[1]
+      tree
     );
 
-  return [formState[0], newTree];
+  return [value, newTree];
 }
 
 // Unique id for each field so that errors can be tracked by the fields that

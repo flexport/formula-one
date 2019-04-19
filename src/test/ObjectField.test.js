@@ -10,6 +10,7 @@ import {type FieldLink} from "../types";
 import {expectLink, mockLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
 import TestForm from "./TestForm";
+import LinkTap from "../testutils/LinkTap";
 
 describe("ObjectField", () => {
   describe("Sneaky hacks", () => {
@@ -484,6 +485,61 @@ describe("ObjectField", () => {
       // Using Object.is here because toBe hangs as the objects are
       // self-referential and thus not printable
       expect(Object.is(testInstance, nextTestInstance)).toBe(true);
+    });
+
+    it("works fine even if not at the root of the form", () => {
+      const customChange = jest.fn((_oldValue, _newValue) => ({
+        string: "A whole new value",
+        number: 0,
+      }));
+      const objectRenderFn = jest.fn(() => null);
+      const linkTapFn = jest.fn(() => null);
+
+      TestRenderer.create(
+        <Form
+          initialValue={{
+            uncle: "Bob",
+            nested: {
+              string: "hello",
+              number: 42,
+            },
+          }}
+        >
+          {link => (
+            <ObjectField link={link}>
+              {link => (
+                <>
+                  <TestField link={link.uncle} />
+                  <LinkTap link={link.nested}>{linkTapFn}</LinkTap>
+                  <ObjectField
+                    link={link.nested}
+                    validation={jest.fn(() => ["This is an error"])}
+                    customChange={customChange}
+                  >
+                    {objectRenderFn}
+                  </ObjectField>
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      linkTapFn.mockClear();
+
+      // call the child onChange to trigger a customChange
+      const objectLinks = objectRenderFn.mock.calls[0][0];
+      objectLinks.string.onChange(mockFormState("newString"));
+
+      // onChange should be called with the result of customChange
+      expect(linkTapFn).toHaveBeenCalledTimes(1);
+      expect(linkTapFn.mock.calls[0][0].formState).toEqual([
+        {
+          string: "A whole new value",
+          number: 0,
+        },
+        expect.anything(),
+      ]);
     });
   });
 });
