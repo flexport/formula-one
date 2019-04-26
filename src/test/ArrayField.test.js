@@ -287,9 +287,13 @@ describe("ArrayField", () => {
         );
       });
       it("validates after entry is removed", () => {
-        const renderFn = jest.fn(() => null);
+        const elementValidation = jest.fn(() => ["an element error"]);
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField key={i} link={link} validation={elementValidation} />
+          ))
+        );
         const validation = jest.fn(() => ["an error"]);
-
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
             {link => (

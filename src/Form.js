@@ -24,6 +24,7 @@ import {
   updateAtPath,
   mapShapedTree,
   mapRoot,
+  pathExistsInTree,
 } from "./shapedTree";
 import {pathFromPathString, type Path} from "./tree";
 import {
@@ -451,6 +452,12 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     const map = this.validations.get(encodedPath);
     invariant(map != null, "Couldn't find handler map during unregister");
     map.delete(fieldId);
+
+    // If the entire path was deleted from the tree, any left over errors are
+    // already gone. For example, this happens when an array child is removed.
+    if (!pathExistsInTree(path, this.state.formState[1])) {
+      return;
+    }
 
     // now that the validation is gone, make sure there are no left over
     // errors from it
