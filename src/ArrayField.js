@@ -36,7 +36,6 @@ import {
   getExtras,
   flatRootErrors,
   isValid,
-  changedFormState,
 } from "./formState";
 import type {Path} from "./tree";
 
@@ -125,24 +124,19 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
 
     const oldValue = this.props.link.formState[0];
     const newValue = newFormState[0];
-
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
     let validatedFormState: FormState<Array<E>>;
     if (customValue) {
-      // Create a fresh form state for the new value.
-      // TODO(zach): It's kind of gross that this is happening outside of Form.
-      const nextFormState = changedFormState(customValue);
-
       // A custom change occurred, which means the whole array needs to be
       // revalidated.
-      validatedFormState = this.context.applyValidationToTreeAtPath(
-        this.props.link.path,
-        nextFormState
-      );
+      validatedFormState = this.context.updateTreeAtPath(this.props.link.path, [
+        customValue,
+        newFormState[1],
+      ]);
     } else {
-      validatedFormState = this.context.applyValidationAtPath(
+      validatedFormState = this.context.updateNodeAtPath(
         this.props.link.path,
         newFormState
       );
@@ -164,7 +158,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
   };
 
   _validateThenApplyChange = <E>(formState: FormState<Array<E>>) => {
-    const validatedFormState = this.context.applyValidationAtPath(
+    const validatedFormState = this.context.updateNodeAtPath(
       this.props.link.path,
       formState
     );

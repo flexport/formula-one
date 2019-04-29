@@ -3,6 +3,7 @@
 import * as React from "react";
 import invariant from "./utils/invariant";
 import {equals as arrayEquals} from "./utils/array";
+import {changedFormState} from "./formState";
 
 import type {
   MetaField,
@@ -63,8 +64,8 @@ export type FormContextPayload = {|
   ) => ValidationOps<mixed>,
   // TODO(dmnd): Try to get rid of * here by writing a type-level function of
   // Path and FormState<T>
-  applyValidationToTreeAtPath: (Path, FormState<*>) => FormState<*>,
-  applyValidationAtPath: (Path, FormState<*>) => FormState<*>,
+  updateTreeAtPath: (Path, FormState<*>) => FormState<*>,
+  updateNodeAtPath: (Path, FormState<*>) => FormState<*>,
 |};
 export const FormContext: React.Context<FormContextPayload> = React.createContext(
   {
@@ -72,8 +73,8 @@ export const FormContext: React.Context<FormContextPayload> = React.createContex
     pristine: false,
     submitted: true,
     registerValidation: () => ({replace: () => {}, unregister: () => {}}),
-    applyValidationToTreeAtPath: (path, formState) => formState,
-    applyValidationAtPath: (path, formState) => formState,
+    updateTreeAtPath: (path, formState) => formState,
+    updateNodeAtPath: (path, formState) => formState,
   }
 );
 
@@ -180,12 +181,25 @@ function getRelativePath(path: Path, prefix: Path) {
   return path.slice(prefix.length);
 }
 
-function applyValidationToTreeAtPath<T>(
+/**
+ * Deeply updates the FormState tree to reflect a new value. Similar to
+ * applyValidationToTree, but in response to a deep update, so updates all child
+ * paths too. Used in response to a custom change.
+ *
+ * TODO(dmnd): Consider updating _initialTree vs. calling changedFormState.
+ */
+function updateTreeAtPath<T>(
   prefix: Path,
-  [value, tree]: FormState<T>,
+  [initialValue, _initialTree]: FormState<T>,
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): FormState<T> {
-  const newTree = [...validations.entries()]
+  // Create a fresh form state for the new value.
+  // TODO(dmnd): Currently this changedFormState overwrites `succeeded`
+  // recursively instead of updating it based on the previous value, which seems
+  // like a bug.
+  const [value, changedTree] = changedFormState(initialValue);
+
+  const validatedTree = [...validations.entries()]
     .filter(([path]) => startsWith(path, prefix))
     .map(([path, validationsMap]) => {
       // Note that value is not the root value, it's the value at this path.
@@ -203,6 +217,9 @@ function applyValidationToTreeAtPath<T>(
     })
     .reduce(
       (tree, [path, newErrors]) =>
+        // Here we don't reset `errors: {server}` or set `meta: {touched: true,
+        // changed: true}`. This is because we already called changedFormState
+        // above.
         updateAtPath(
           path,
           ({errors, meta}) => ({
@@ -214,10 +231,10 @@ function applyValidationToTreeAtPath<T>(
           }),
           tree
         ),
-      tree
+      changedTree
     );
 
-  return [value, newTree];
+  return [value, validatedTree];
 }
 
 // Unique id for each field so that errors can be tracked by the fields that
@@ -244,7 +261,14 @@ function validateAtPath(
   );
 }
 
-function applyValidationAtPath<T>(
+/**
+ * Updates the FormState tree to reflect a new value:
+ *  - run validations at path (but not child paths)
+ *  - remove existing, now obsolete errors
+ *  - calculate & write new client side errors
+ *  - ensure that meta reflects that the value has changed
+ */
+function updateNodeAtPath<T>(
   path: Path,
   [value, tree]: FormState<T>,
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
@@ -343,7 +367,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     // call onChange during cDM.
     this.setState(
       ({formState}) => ({
-        formState: applyValidationToTreeAtPath([], formState, this.validations),
+        formState: updateTreeAtPath([], formState, this.validations),
       }),
       () => {
         this.props.onValidation(isValid(this.state.formState));
@@ -476,10 +500,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         value={{
           shouldShowError: this.props.feedbackStrategy.bind(null, metaForm),
           registerValidation: this.handleRegisterValidation,
-          applyValidationToTreeAtPath: (path, formState) =>
-            applyValidationToTreeAtPath(path, formState, this.validations),
-          applyValidationAtPath: (path, formState) =>
-            applyValidationAtPath(path, formState, this.validations),
+          updateTreeAtPath: (path, formState) =>
+            updateTreeAtPath(path, formState, this.validations),
+          updateNodeAtPath: (path, formState) =>
+            updateNodeAtPath(path, formState, this.validations),
           ...metaForm,
         }}
       >

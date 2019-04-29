@@ -193,15 +193,15 @@ describe("ObjectField", () => {
       const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
 
-      const applyValidationAtPath = jest.fn((path, formState) => formState);
+      const updateNodeAtPath = jest.fn((path, formState) => formState);
 
       TestRenderer.create(
-        <TestForm applyValidationAtPath={applyValidationAtPath}>
+        <TestForm updateNodeAtPath={updateNodeAtPath}>
           <ObjectField link={link}>{renderFn}</ObjectField>
         </TestForm>
       );
 
-      expect(applyValidationAtPath).toHaveBeenCalledTimes(0);
+      expect(updateNodeAtPath).toHaveBeenCalledTimes(0);
       expect(link.onChange).toHaveBeenCalledTimes(0);
 
       // call the child onChange
@@ -209,8 +209,8 @@ describe("ObjectField", () => {
       const newChildMeta = mockFormState("newString");
       objectLinks.string.onChange(newChildMeta);
 
-      expect(applyValidationAtPath).toHaveBeenCalledTimes(1);
-      expect(applyValidationAtPath).toHaveBeenCalledWith(
+      expect(updateNodeAtPath).toHaveBeenCalledTimes(1);
+      expect(updateNodeAtPath).toHaveBeenCalledWith(
         [],
         [{string: "newString", number: 42}, expect.anything()]
       );
