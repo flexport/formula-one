@@ -1,6 +1,6 @@
 {
   "name": "formula-one",
-  "version": "0.9.0-alpha.7",
+  "version": "0.9.0-alpha.9",
   "description": "Strongly-typed React form state management",
   "author": "Zach Gotsch",
   "license": "MIT",
