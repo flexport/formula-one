@@ -151,14 +151,14 @@ export function foldMapTree<T, Folded>(
     return mapper(tree.data);
   } else if (tree.type === "array") {
     const foldedChildren = tree.children.reduce(
-      (memo, childTree) =>
+      (memo: Folded, childTree) =>
         mappend(memo, foldMapTree(mapper, mempty, mappend, childTree)),
       mempty
     );
     return mappend(mapper(tree.data), foldedChildren);
   } else {
     const foldedChildren = Object.keys(tree.children).reduce(
-      (memo, key) =>
+      (memo: Folded, key) =>
         mappend(memo, foldMapTree(mapper, mempty, mappend, tree.children[key])),
       mempty
     );
