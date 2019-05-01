@@ -11,6 +11,7 @@ import type {FieldLink} from "../types";
 
 import {expectLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
+import LinkTap from "../testutils/LinkTap";
 import {forgetShape} from "../shapedTree";
 
 class NaughtyRenderingInput extends React.Component<{|
@@ -189,7 +190,83 @@ describe("Form", () => {
       expect(node.data.errors.client).toEqual([]);
       expect(node.data.meta.succeeded).toBe(true);
     });
+
+    it("validates newly mounted Fields", () => {
+      function expectClientErrors(link) {
+        const tree = link.formState[1];
+        return expect(forgetShape(tree).data.errors.client);
+      }
+
+      const renderFn = jest.fn(() => null);
+      const validationA = jest.fn(() => ["error a"]);
+      const validationB = jest.fn(() => ["error b"]);
+      const renderer = TestRenderer.create(
+        <Form initialValue={{key: "hello"}}>
+          {link => (
+            <ObjectField link={link}>
+              {link => (
+                <>
+                  <LinkTap link={link.key}>{renderFn}</LinkTap>
+                  <TestField link={link.key} validation={validationA} />
+                  {/*<TestField link={link.key} validation={validationB} />*/}
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+      expect(renderFn).toHaveBeenCalledTimes(2);
+
+      // on the initial render, we expose "pending" as part of our API
+      // TODO(dmnd): It'd be nice if we could avoid this.
+      expectClientErrors(renderFn.mock.calls[0][0]).toEqual("pending");
+
+      // After the second render the error arrives.
+      expectClientErrors(renderFn.mock.calls[1][0]).toEqual(["error a"]);
+
+      expect(validationA).toHaveBeenCalledTimes(1);
+      expect(validationA).toHaveBeenCalledWith("hello");
+
+      // When a new Field is mounted, we expect the errors to show up.
+      renderFn.mockClear();
+      validationA.mockClear();
+      renderer.update(
+        <Form initialValue={{key: "hello"}}>
+          {link => (
+            <ObjectField link={link}>
+              {link => (
+                <>
+                  <LinkTap link={link.key}>{renderFn}</LinkTap>
+                  <TestField link={link.key} validation={validationA} />
+                  <TestField link={link.key} validation={validationB} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+      expect(renderFn).toHaveBeenCalledTimes(2);
+
+      // There's an initial render where the field hasn't yet been validated
+      // TODO(dmnd): It'd be nice if we could avoid this.
+      expectClientErrors(renderFn.mock.calls[0][0]).toEqual(["error a"]);
+
+      // After the update, the new error should be present.
+      expectClientErrors(renderFn.mock.calls[1][0]).toEqual([
+        "error a",
+        "error b",
+      ]);
+
+      // Validation functions should receive the correct parameters. These
+      // assertions protect against bugs that confuse relative and absolute
+      // paths/values.
+      expect(validationA).toHaveBeenCalledTimes(1);
+      expect(validationA).toHaveBeenCalledWith("hello");
+      expect(validationB).toHaveBeenCalledTimes(1);
+      expect(validationB).toHaveBeenCalledWith("hello");
+    });
   });
+
   describe("Form manages form state", () => {
     it("creates the initial formState from initialValue and serverErrors", () => {
       const onSubmit = jest.fn();

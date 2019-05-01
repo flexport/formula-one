@@ -245,18 +245,22 @@ function nextFieldId() {
   return _nextFieldId++;
 }
 
+// TODO(dmnd): This function is confusing to use because pathToValue and
+// validations are conceptually "absolute" (i.e. they are defined with respect
+// to the root), but valueAtPath is *not* absolute: it's the value deeper in the
+// tree, defined respective to pathToValue.
 function validateAtPath(
-  path: Path,
-  value: mixed,
+  pathToValue: Path,
+  valueAtPath: mixed, // TODO(dmnd): Better typechecking with ShapedPath?
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): Array<string> {
-  const map = validations.get(encodePath(path));
+  const map = validations.get(encodePath(pathToValue));
   if (!map) {
     return [];
   }
 
   return [...map.values()].reduce(
-    (errors, validationFn) => errors.concat(validationFn(value)),
+    (errors, validationFn) => errors.concat(validationFn(valueAtPath)),
     []
   );
 }
@@ -344,6 +348,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   }
 
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>;
+  initialValidationComplete = false;
 
   constructor(props: Props<T, ExtraSubmitData>) {
     super(props);
@@ -363,6 +368,12 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   }
 
   componentDidMount() {
+    // After the the Form mounts, all validations get ran as a batch. Note that
+    // this is different from how initial validations get run on all
+    // subsequently mounted Fields. When a Field is mounted after the Form, its
+    // validation gets run individually.
+    // TODO(dmnd): It'd be nice to consolidate validation to a single code path.
+
     // Take care to use an updater to avoid clobbering changes from fields that
     // call onChange during cDM.
     this.setState(
@@ -370,6 +381,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         formState: updateTreeAtPath([], formState, this.validations),
       }),
       () => {
+        this.initialValidationComplete = true;
         this.props.onValidation(isValid(this.state.formState));
       }
     );
@@ -412,14 +424,15 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
    * children change.
    */
   recomputeErrorsAtPathAndRender = (path: Path) => {
-    this.setState(({formState: [value, tree]}) => {
+    this.setState(({formState: [rootValue, tree]}) => {
+      const value = getValueAtPath(path, rootValue);
       const errors = validateAtPath(path, value, this.validations);
       const updatedTree = updateAtPath(
         path,
         extras => ({...extras, errors: {...extras.errors, client: errors}}),
         tree
       );
-      return {formState: [value, updatedTree]};
+      return {formState: [rootValue, updatedTree]};
     });
   };
 
@@ -430,6 +443,13 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     const map = this.validations.get(encodedPath) || new Map();
     map.set(fieldId, fn);
     this.validations.set(encodedPath, map);
+
+    if (this.initialValidationComplete) {
+      // Form validates all Fields at once during mount. When fields are added
+      // after the Form has already mounted, their initial values need to be
+      // validated.
+      this.recomputeErrorsAtPathAndRender(path);
+    }
 
     return {
       replace: fn => this.replaceValidation(path, fieldId, fn),
