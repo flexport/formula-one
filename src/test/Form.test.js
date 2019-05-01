@@ -265,6 +265,28 @@ describe("Form", () => {
       expect(validationB).toHaveBeenCalledTimes(1);
       expect(validationB).toHaveBeenCalledWith("hello");
     });
+
+    it("updates errors when a new validation function is provided via props", () => {
+      const renderer = TestRenderer.create(
+        <Form initialValue="hello">
+          {link => <TestField link={link} validation={() => ["error 1"]} />}
+        </Form>
+      );
+
+      let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      let errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 1"]);
+
+      renderer.update(
+        <Form initialValue="hello">
+          {link => <TestField link={link} validation={() => ["error 2"]} />}
+        </Form>
+      );
+
+      link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 2"]);
+    });
   });
 
   describe("Form manages form state", () => {
@@ -810,28 +832,6 @@ describe("Form", () => {
       errors = link.formState[1].data.errors.client;
       expect(errors).toEqual(["error 1"]);
     });
-  });
-
-  it("updates errors when a new validation function is provided via props", () => {
-    const renderer = TestRenderer.create(
-      <Form initialValue="hello">
-        {link => <TestField link={link} validation={() => ["error 1"]} />}
-      </Form>
-    );
-
-    let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
-    let errors = link.formState[1].data.errors.client;
-    expect(errors).toEqual(["error 1"]);
-
-    renderer.update(
-      <Form initialValue="hello">
-        {link => <TestField link={link} validation={() => ["error 2"]} />}
-      </Form>
-    );
-
-    link = renderer.root.findAllByType(TestField)[0].instance.props.link;
-    errors = link.formState[1].data.errors.client;
-    expect(errors).toEqual(["error 2"]);
   });
 
   it("Calls onSubmit with the value when submitted", () => {
