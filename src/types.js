@@ -64,4 +64,4 @@ export type FieldLink<T> = {|
 
 export type Validation<T> = T => Array<string>;
 
-export type CustomChange<T> = (oldValue: T, newValue: T) => null | T;
+export type CustomChange<T> = (prevValue: T, nextValue: T) => null | T;
