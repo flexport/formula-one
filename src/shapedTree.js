@@ -1,13 +1,6 @@
 // @flow strict
 
-import {
-  type Tree,
-  type Path,
-  leaf,
-  strictZipWith,
-  mapTree,
-  foldMapTree,
-} from "./tree";
+import {type Tree, type Path, mapTree, foldMapTree} from "./tree";
 import invariant from "./utils/invariant";
 import {replaceAt} from "./utils/array";
 
@@ -203,37 +196,6 @@ export function updateAtPath<T, Node>(
   throw new Error("unreachable");
 }
 
-export function checkShape<T, Node>(
-  value: T,
-  tree: Tree<Node>
-): ShapedTree<T, Node> {
-  if (tree.type === "array") {
-    invariant(Array.isArray(value), "value isn't an array");
-    invariant(
-      value.length === tree.children.length,
-      "value and tree children have different lengths"
-    );
-    tree.children.forEach((child, i) => {
-      checkShape(value[i], child);
-    });
-  }
-  if (tree.type === "object") {
-    invariant(value instanceof Object, "value isn't an object in checkTree");
-    const valueEntries = Object.entries(value);
-    const childrenKeys = new Set(Object.keys(tree.children));
-    invariant(
-      valueEntries.length === childrenKeys.size,
-      "value doesn't have the right number of keys"
-    );
-    valueEntries.forEach(([key, value]) => {
-      invariant(childrenKeys.has(key));
-      checkShape(value, tree.children[key]);
-    });
-  }
-  // leaves are allowed to stand in for complex types in T
-  return tree;
-}
-
 export function shapedArrayChild<E, Node>(
   index: number,
   tree: ShapedTree<Array<E>, Node>
@@ -346,20 +308,6 @@ export function dangerouslySetChildren<E, Node>(
     data: tree.data,
     children: children.map(forgetShape),
   };
-}
-
-// A leaf matches any shape
-export function shapedLeaf<T, Node>(node: Node): ShapedTree<T, Node> {
-  return leaf(node);
-}
-
-export function shapedZipWith<T, A, B, C>(
-  f: (A, B) => C,
-  left: ShapedTree<T, A>,
-  right: ShapedTree<T, B>
-): ShapedTree<T, C> {
-  // Don't actually need the checks here if our invariant holds
-  return strictZipWith(f, left, right);
 }
 
 // Mapping doesn't change the shape

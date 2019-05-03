@@ -12,6 +12,7 @@ import type {
   FieldLink,
   AdditionalRenderInfo,
 } from "./types";
+import {type Direction} from "./tree";
 import {
   type FormState,
   isValid,
@@ -161,10 +162,7 @@ function getValueAtPath(path: Path, value: Value) {
   throw new Error("Path is too long");
 }
 
-function pathSegmentEqual(
-  a: $ElementType<Path, number>,
-  b: $ElementType<Path, number>
-) {
+function pathSegmentEqual(a: Direction, b: Direction) {
   return (
     (a.type === "array" && b.type === "array" && a.index === b.index) ||
     (a.type === "object" && b.type === "object" && a.key === b.key)
@@ -185,18 +183,18 @@ function getRelativePath(path: Path, prefix: Path) {
  * Deeply updates the FormState tree to reflect a new value. Similar to
  * applyValidationToTree, but in response to a deep update, so updates all child
  * paths too. Used in response to a custom change.
- *
- * TODO(dmnd): Consider updating _initialTree vs. calling changedFormState.
  */
 function updateTreeAtPath<T>(
   prefix: Path,
   [initialValue, _initialTree]: FormState<T>,
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): FormState<T> {
-  // Create a fresh form state for the new value.
-  // TODO(dmnd): Currently this changedFormState overwrites `succeeded`
-  // recursively instead of updating it based on the previous value, which seems
-  // like a bug.
+  // Create a fresh form state for the new value. Note that this overwrites any
+  // existing `succeeded` values with false. `succeeded` will only be set back
+  // to true if and only if the current validation passes. We lose history. For
+  // most use cases this is likely desirible behaviour, but there could be uses
+  // cases for which it isn't desired. We'll fix it if we encounter one of those
+  // use cases.
   const [value, changedTree] = changedFormState(initialValue);
 
   const validatedTree = [...validations.entries()]
@@ -206,11 +204,11 @@ function updateTreeAtPath<T>(
       // So convert absolute validation paths to relative before attempting to
       // pull out the value on which to run them.
       const relativePath = getRelativePath(decodePath(path), prefix);
-      const x = getValueAtPath(relativePath, value);
+      const valueAtPath = getValueAtPath(relativePath, value);
 
       // Run all validation functions on x
       const errors = [...validationsMap.values()].reduce(
-        (errors, validationFn) => errors.concat(validationFn(x)),
+        (errors, validationFn) => errors.concat(validationFn(valueAtPath)),
         []
       );
       return [relativePath, errors];
