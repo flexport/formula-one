@@ -133,7 +133,7 @@ describe("Field", () => {
         ...oldRoot,
         errors: {
           client: ["Some", "client", "errors"],
-          server: ["Server errors", "go here"],
+          external: ["External errors", "go here"],
         },
       }),
       formState[1]
@@ -147,7 +147,7 @@ describe("Field", () => {
       "Some",
       "client",
       "errors",
-      "Server errors",
+      "External errors",
       "go here",
     ]);
   });
@@ -187,7 +187,7 @@ describe("Field", () => {
     const formState = mockFormState(10);
     // $FlowFixMe
     formState[1].data.errors = {
-      server: ["A server error"],
+      external: ["An external error"],
       client: ["A client error"],
     };
     const link = mockLink(formState);
@@ -206,7 +206,7 @@ describe("Field", () => {
         changed: false,
         shouldShowErrors: expect.anything(),
         unfilteredErrors: expect.arrayContaining([
-          "A server error",
+          "An external error",
           "A client error",
         ]),
         valid: false,

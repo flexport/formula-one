@@ -290,14 +290,14 @@ describe("Form", () => {
   });
 
   describe("Form manages form state", () => {
-    it("creates the initial formState from initialValue and serverErrors", () => {
+    it("creates the initial formState from initialValue and externalErrors", () => {
       const onSubmit = jest.fn();
       const renderFn = jest.fn(() => null);
       TestRenderer.create(
         <Form
           initialValue={1}
           onSubmit={onSubmit}
-          serverErrors={{"/": ["Server error", "Another server error"]}}
+          externalErrors={{"/": ["External error", "Another external error"]}}
         >
           {renderFn}
         </Form>
@@ -320,12 +320,12 @@ describe("Form", () => {
         },
         errors: {
           client: "pending",
-          server: ["Server error", "Another server error"],
+          external: ["External error", "Another external error"],
         },
       });
     });
 
-    it("parses and sets complex server errors", () => {
+    it("parses and sets complex external errors", () => {
       const onSubmit = jest.fn();
       const renderFn = jest.fn(() => null);
       TestRenderer.create(
@@ -335,7 +335,7 @@ describe("Form", () => {
             complex: [{inner: "hello"}, {inner: "there"}],
           }}
           onSubmit={onSubmit}
-          serverErrors={{
+          externalErrors={{
             "/": ["Root error"],
             "/simple": ["One", "level", "down"],
             "/complex": [],
@@ -354,18 +354,18 @@ describe("Form", () => {
       const [_, tree] = link.formState;
       // Cross your fingers
       const root: any = tree;
-      expect(root.data.errors.server).toEqual(["Root error"]);
+      expect(root.data.errors.external).toEqual(["Root error"]);
       const simple = root.children.simple;
-      expect(simple.data.errors.server).toEqual(["One", "level", "down"]);
+      expect(simple.data.errors.external).toEqual(["One", "level", "down"]);
       const complex = root.children.complex;
-      expect(complex.data.errors.server).toEqual([]);
+      expect(complex.data.errors.external).toEqual([]);
       const complex0 = complex.children[0];
-      expect(complex0.data.errors.server).toEqual(["in an", "array"]);
+      expect(complex0.data.errors.external).toEqual(["in an", "array"]);
       const complex1 = complex.children[1];
-      expect(complex1.data.errors.server).toEqual([]);
+      expect(complex1.data.errors.external).toEqual([]);
     });
 
-    it("updates the server errors", () => {
+    it("updates the external errors", () => {
       const onSubmit = jest.fn();
       const renderFn = jest.fn(() => null);
       const renderer = TestRenderer.create(
@@ -374,7 +374,7 @@ describe("Form", () => {
             array: [],
           }}
           onSubmit={onSubmit}
-          serverErrors={{
+          externalErrors={{
             "/array": ["Cannot be empty"],
           }}
         >
@@ -395,7 +395,7 @@ describe("Form", () => {
             array: [],
           }}
           onSubmit={onSubmit}
-          serverErrors={{
+          externalErrors={{
             "/array": [],
             "/array/0": ["inner error"],
           }}
@@ -411,11 +411,11 @@ describe("Form", () => {
       const [_, tree] = link.formState;
       // Cross your fingers
       const root: any = tree;
-      expect(root.data.errors.server).toEqual([]);
+      expect(root.data.errors.external).toEqual([]);
       const array = root.children.array;
-      expect(array.data.errors.server).toEqual([]);
+      expect(array.data.errors.external).toEqual([]);
       const array0 = array.children[0];
-      expect(array0.data.errors.server).toEqual(["inner error"]);
+      expect(array0.data.errors.external).toEqual(["inner error"]);
     });
 
     it("doesn't cause an infinite loop when using inline validation function", () => {
@@ -660,7 +660,7 @@ describe("Form", () => {
           initialValue={1}
           feedbackStrategy={FeedbackStrategies.Touched}
           onSubmit={jest.fn()}
-          serverErrors={{"/": ["Server error", "Another server error"]}}
+          externalErrors={{"/": ["External error", "Another external error"]}}
         >
           {renderFn}
         </Form>
@@ -674,8 +674,8 @@ describe("Form", () => {
           changed: false,
           shouldShowErrors: false,
           unfilteredErrors: expect.arrayContaining([
-            "Server error",
-            "Another server error",
+            "External error",
+            "Another external error",
           ]),
           // Currently, only care about client errors
           valid: true,

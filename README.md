@@ -386,12 +386,12 @@ export default function CustomChange() {
 
 ### External validation
 
-Oftentimes, you will want to show errors from an external source (such as the server) in your form alongside any client-side validation errors. These can be passed into your `<Form>` component using the `serverErrors` (TODO(zach): change to `externalErrors`?) prop.
+Oftentimes, you will want to show errors from an external source (such as the server) in your form alongside any client-side validation errors. These can be passed into your `<Form>` component using the `externalErrors` prop.
 
 These errors must be in an object with keys representing the path to the field they should be associated with. For example, the errors:
 
 ```js
-const serverErrors = {
+const externalErrors = {
   "/": "User failed to save!",
   "/email": "A user with this email already exists!",
 };
@@ -400,7 +400,7 @@ const serverErrors = {
 could be used in this form:
 
 ```jsx
-<Form serverErrors={serverErrors}>
+<Form externalErrors={externalErrors}>
   {(link, handleSubmit) => (
     <>
       <ObjectField link={link}>

@@ -23,8 +23,8 @@ function getErrors(errors: Err) {
   if (errors.client !== "pending") {
     flatErrors = flatErrors.concat(errors.client);
   }
-  if (errors.server !== "unchecked") {
-    flatErrors = flatErrors.concat(errors.server);
+  if (errors.external !== "unchecked") {
+    flatErrors = flatErrors.concat(errors.external);
   }
   return flatErrors;
 }
@@ -72,7 +72,7 @@ export default class Field<T> extends React.Component<Props<T>> {
     const [_, tree] = this.props.link.formState;
 
     this.props.link.onBlur(
-      // TODO(zach): Not sure if we should blow away server errors here
+      // TODO(zach): Not sure if we should blow away external errors here
       mapRoot(setExtrasTouched, tree)
     );
   };

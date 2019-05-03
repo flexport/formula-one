@@ -54,8 +54,8 @@ export function flatRootErrors<T>(formState: FormState<T>): Array<string> {
   if (errors.client !== "pending") {
     flatErrors = flatErrors.concat(errors.client);
   }
-  if (errors.server !== "unchecked") {
-    flatErrors = flatErrors.concat(errors.server);
+  if (errors.external !== "unchecked") {
+    flatErrors = flatErrors.concat(errors.external);
   }
   return flatErrors;
 }

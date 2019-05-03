@@ -79,24 +79,24 @@ export const FormContext: React.Context<FormContextPayload> = React.createContex
   }
 );
 
-function applyServerErrorsToFormState<T>(
-  serverErrors: null | {[path: string]: Array<string>},
+function applyExternalErrorsToFormState<T>(
+  externalErrors: null | {[path: string]: Array<string>},
   formState: FormState<T>
 ): FormState<T> {
   const [value, oldTree] = formState;
 
   let tree: ShapedTree<T, Extras>;
-  if (serverErrors !== null) {
+  if (externalErrors !== null) {
     // If keys do not appear, no errors
     tree = mapShapedTree(
       ({errors, meta}) => ({
-        errors: {...errors, server: []},
+        errors: {...errors, external: []},
         meta,
       }),
       oldTree
     );
-    Object.keys(serverErrors).forEach(key => {
-      const newErrors: Array<string> = serverErrors[key];
+    Object.keys(externalErrors).forEach(key => {
+      const newErrors: Array<string> = externalErrors[key];
       const path = shapePath(value, pathFromPathString(key));
 
       if (path != null) {
@@ -104,7 +104,7 @@ function applyServerErrorsToFormState<T>(
         tree = updateAtPath(
           path,
           ({errors, meta}) => ({
-            errors: {...errors, server: newErrors},
+            errors: {...errors, external: newErrors},
             meta,
           }),
           tree
@@ -122,7 +122,7 @@ function applyServerErrorsToFormState<T>(
   } else {
     tree = mapShapedTree(
       ({errors, meta}) => ({
-        errors: {...errors, server: []},
+        errors: {...errors, external: []},
         meta,
       }),
       oldTree
@@ -215,7 +215,7 @@ function updateTreeAtPath<T>(
     })
     .reduce(
       (tree, [path, newErrors]) =>
-        // Here we don't reset `errors: {server}` or set `meta: {touched: true,
+        // Here we don't reset `errors: {external}` or set `meta: {touched: true,
         // changed: true}`. This is because we already called changedFormState
         // above.
         updateAtPath(
@@ -282,7 +282,7 @@ function updateNodeAtPath<T>(
       ({meta}) => ({
         errors: {
           client: errors,
-          server: "unchecked",
+          external: "unchecked",
         },
         meta: {
           ...meta,
@@ -303,7 +303,7 @@ type Props<T, ExtraSubmitData> = {|
   +onSubmit: (T, ExtraSubmitData) => void,
   +onChange: T => void,
   +onValidation: boolean => void,
-  +serverErrors: null | {[path: string]: Array<string>},
+  +externalErrors: null | {[path: string]: Array<string>},
   +children: (
     link: FieldLink<T>,
     onSubmit: (ExtraSubmitData) => void,
@@ -314,7 +314,7 @@ type State<T> = {
   formState: FormState<T>,
   pristine: boolean,
   submitted: boolean,
-  oldServerErrors: null | {[path: string]: Array<string>},
+  oldExternalErrors: null | {[path: string]: Array<string>},
 };
 export default class Form<T, ExtraSubmitData> extends React.Component<
   Props<T, ExtraSubmitData>,
@@ -325,21 +325,21 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     onSubmit: () => {},
     onValidation: () => {},
     feedbackStrategy: FeedbackStrategies.Always,
-    serverErrors: null,
+    externalErrors: null,
   };
 
   static getDerivedStateFromProps(
     props: Props<T, ExtraSubmitData>,
     state: State<T>
   ) {
-    if (props.serverErrors !== state.oldServerErrors) {
-      const newTree = applyServerErrorsToFormState<T>(
-        props.serverErrors,
+    if (props.externalErrors !== state.oldExternalErrors) {
+      const newTree = applyExternalErrorsToFormState<T>(
+        props.externalErrors,
         state.formState
       );
       return {
         formState: newTree,
-        oldServerErrors: props.serverErrors,
+        oldExternalErrors: props.externalErrors,
       };
     }
     return null;
@@ -353,15 +353,15 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
 
     this.validations = new Map();
 
-    const formState = applyServerErrorsToFormState(
-      props.serverErrors,
+    const formState = applyExternalErrorsToFormState(
+      props.externalErrors,
       freshFormState(props.initialValue)
     );
     this.state = {
       formState,
       pristine: true,
       submitted: false,
-      oldServerErrors: props.serverErrors,
+      oldExternalErrors: props.externalErrors,
     };
   }
 
