@@ -7,88 +7,102 @@ import Field from "../Field";
 import {type FieldLink} from "../types";
 import {mockFormState, mockLink} from "./tools";
 import TestField, {TestInput} from "./TestField";
+import TestForm from "./TestForm";
 import {mapRoot} from "../shapedTree";
 
 describe("Field", () => {
-  describe("validates on mount", () => {
-    it("ensures that the link inner type matches the type of the validation", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-
-      // $ExpectError
-      <Field link={link} validation={(_e: empty) => []}>
-        {() => null}
-      </Field>;
-
-      <Field link={link} validation={(_e: string) => []}>
-        {() => null}
-      </Field>;
-    });
-
-    it("Sets errors.client and meta.succeeded when there are no errors", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-      const validation = jest.fn(() => []);
-
-      TestRenderer.create(<TestField link={link} validation={validation} />);
-
-      expect(validation).toHaveBeenCalledTimes(1);
-      expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-      const [path, errors] = link.onValidation.mock.calls[0];
-      expect(path).toEqual([]);
-      expect(errors).toEqual([]);
-    });
-
-    it("Sets errors.client and meta.succeeded when there are errors", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-      const validation = jest.fn(() => ["This is an error"]);
-
-      TestRenderer.create(<TestField link={link} validation={validation} />);
-
-      expect(validation).toHaveBeenCalledTimes(1);
-      expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-      const [path, errors] = link.onValidation.mock.calls[0];
-      expect(path).toEqual([]);
-      expect(errors).toEqual(["This is an error"]);
-    });
-
-    it("Counts as successfully validated if there is no validation", () => {
-      const formState = mockFormState("Hello world.");
-      const link = mockLink(formState);
-
-      TestRenderer.create(<TestField link={link} />);
-
-      expect(link.onValidation).toHaveBeenCalledTimes(1);
-
-      const [path, errors] = link.onValidation.mock.calls[0];
-      expect(path).toEqual([]);
-      expect(errors).toEqual([]);
-    });
-  });
-
-  it("calls the link onChange with new values and correct meta", () => {
+  it("ensures that the link inner type matches the type of the validation", () => {
     const formState = mockFormState("Hello world.");
     const link = mockLink(formState);
 
-    const renderer = TestRenderer.create(<TestField link={link} />);
+    // $ExpectError
+    <Field link={link} validation={(_e: empty) => []}>
+      {() => null}
+    </Field>;
+
+    <Field link={link} validation={(_e: string) => []}>
+      {() => null}
+    </Field>;
+  });
+
+  it("registers and unregisters for validation", () => {
+    const formState = mockFormState("Hello world.");
+    const link = mockLink(formState);
+    const unregister = jest.fn();
+    const registerValidation = jest.fn(() => ({
+      replace: jest.fn(),
+      unregister,
+    }));
+
+    const renderer = TestRenderer.create(
+      <TestForm registerValidation={registerValidation}>
+        <Field link={link} validation={jest.fn(() => [])}>
+          {jest.fn(() => null)}
+        </Field>
+      </TestForm>
+    );
+
+    expect(registerValidation).toBeCalledTimes(1);
+    renderer.unmount();
+    expect(unregister).toBeCalledTimes(1);
+  });
+
+  it("calls replace when changing the validation function", () => {
+    const replace = jest.fn();
+    const registerValidation = jest.fn(() => ({
+      replace,
+      unregister: jest.fn(),
+    }));
+
+    function Component() {
+      return (
+        <TestForm registerValidation={registerValidation}>
+          <Field
+            link={mockLink(mockFormState("Hello world."))}
+            validation={() => []}
+          >
+            {() => null}
+          </Field>
+        </TestForm>
+      );
+    }
+
+    const renderer = TestRenderer.create(<Component />);
+    expect(registerValidation).toBeCalledTimes(1);
+
+    renderer.update(<Component />);
+    expect(replace).toBeCalledTimes(1);
+  });
+
+  it("validates new values and passes result to onChange", () => {
+    const formState = mockFormState("Hello world.");
+    const link = mockLink(formState);
+
+    const updateNodeAtPath = jest.fn((path, formState) => formState);
+
+    const renderer = TestRenderer.create(
+      <TestForm updateNodeAtPath={updateNodeAtPath}>
+        <TestField link={link} />
+      </TestForm>
+    );
     const inner = renderer.root.findByType(TestInput);
 
+    expect(updateNodeAtPath).toHaveBeenCalledTimes(0);
     expect(link.onChange).toHaveBeenCalledTimes(0);
-    inner.instance.change("You've got mail");
-    expect(link.onChange).toHaveBeenCalledTimes(1);
 
-    const [value, tree] = link.onChange.mock.calls[0][0];
-    expect(value).toBe("You've got mail");
-    expect(tree.data).toMatchObject({
-      meta: {
-        touched: true,
-        changed: true,
-        succeeded: true,
-      },
-    });
+    inner.instance.change("You've got mail");
+
+    expect(updateNodeAtPath).toHaveBeenCalledTimes(1);
+    expect(updateNodeAtPath).toHaveBeenCalledWith(
+      [],
+      ["You've got mail", expect.anything()]
+    );
+
+    expect(link.onChange).toHaveBeenCalledTimes(1);
+    expect(link.onChange).toHaveBeenCalledWith([
+      "You've got mail",
+      formState[1],
+    ]);
   });
 
   it("calls the link onBlur with correct meta", () => {

@@ -3,14 +3,8 @@
 import * as React from "react";
 import type {FieldLink, Validation, Err, AdditionalRenderInfo} from "./types";
 import {mapRoot} from "./shapedTree";
-import {FormContext} from "./Form";
-import {
-  setExtrasTouched,
-  getExtras,
-  setChanged,
-  validate,
-  isValid,
-} from "./formState";
+import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
+import {setExtrasTouched, getExtras, isValid} from "./formState";
 
 type Props<T> = {|
   +link: FieldLink<T>,
@@ -41,28 +35,37 @@ export default class Field<T> extends React.Component<Props<T>> {
   };
   static contextType = FormContext;
 
-  initialValidate() {
-    const {
-      link: {formState, onValidation},
-      validation,
-    } = this.props;
-    const [value] = formState;
-    const {errors} = getExtras(formState);
+  validationFnOps: ValidationOps<T> = validationFnNoOps();
 
-    if (errors.client === "pending") {
-      onValidation([], validation(value));
+  componentDidMount() {
+    this.validationFnOps = this.context.registerValidation(
+      this.props.link.path,
+      this.props.validation
+    );
+  }
+
+  componentDidUpdate(prevProps: Props<T>) {
+    if (prevProps.validation !== this.props.validation) {
+      this.validationFnOps.replace(this.props.validation);
     }
   }
 
-  componentDidMount() {
-    this.initialValidate();
+  componentWillUnmount() {
+    this.validationFnOps.unregister();
+    this.validationFnOps = validationFnNoOps();
   }
 
   onChange: T => void = (newValue: T) => {
-    const [_, oldTree] = this.props.link.formState;
-    this.props.link.onChange(
-      setChanged(validate(this.props.validation, [newValue, oldTree]))
-    );
+    const {
+      path,
+      formState: [_, oldTree],
+      onChange,
+    } = this.props.link;
+    const newFormState = this.context.updateNodeAtPath(path, [
+      newValue,
+      oldTree,
+    ]);
+    onChange(newFormState);
   };
 
   onBlur = () => {

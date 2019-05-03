@@ -1,13 +1,6 @@
 // @flow strict
 
-import {
-  type Tree,
-  type Path,
-  leaf,
-  strictZipWith,
-  mapTree,
-  foldMapTree,
-} from "./tree";
+import {type Tree, type Path, mapTree, foldMapTree} from "./tree";
 import invariant from "./utils/invariant";
 import {replaceAt} from "./utils/array";
 
@@ -86,12 +79,59 @@ export function shapePath<T>(data: T, path: Path): null | ShapedPath<T> {
   return null;
 }
 
+export function pathExistsInTree<T, Node>(
+  path: Path,
+  tree: ShapedTree<T, Node>
+): boolean {
+  // This function is equivalent to:
+  // try {
+  //   updateAtPath(path, x => x, tree);
+  // } catch {
+  //   return false;
+  // }
+  // return true;
+  // }
+
+  if (path.length === 0 && tree.type != null) {
+    return true;
+  }
+
+  const [first, ...rest] = path;
+  if (tree.type === "leaf") {
+    return false;
+  }
+
+  if (tree.type === "array") {
+    if (first.type !== "array") {
+      return false;
+    }
+
+    if (!(0 <= first.index && first.index < tree.children.length)) {
+      return false;
+    }
+
+    return pathExistsInTree(rest, tree.children[first.index]);
+  }
+  if (tree.type === "object") {
+    if (first.type !== "object") {
+      return false;
+    }
+
+    if (!(first.key in tree.children)) {
+      return false;
+    }
+
+    return pathExistsInTree(rest, tree.children[first.key]);
+  }
+
+  throw new Error("unreachable");
+}
+
 export function updateAtPath<T, Node>(
   path: ShapedPath<T>,
   updater: Node => Node,
   tree: ShapedTree<T, Node>
 ): ShapedTree<T, Node> {
-  // console.log("updateAtPath()", path, tree);
   if (path.length === 0) {
     if (tree.type === "object") {
       return {
@@ -123,6 +163,12 @@ export function updateAtPath<T, Node>(
       firstStep.type === "array",
       "Trying to take a non-array path into an array"
     );
+    invariant(
+      0 <= firstStep.index && firstStep.index < tree.children.length,
+      `Tried to take path index ${
+        firstStep.index
+      } but array from tree has length ${tree.children.length}`
+    );
     const newChild = updateAtPath(
       restStep,
       updater,
@@ -136,46 +182,18 @@ export function updateAtPath<T, Node>(
       firstStep.type === "object",
       "Trying to take a non-object path into an object"
     );
-    const newChild = updateAtPath(
-      restStep,
-      updater,
-      tree.children[firstStep.key]
+    const nextTree = tree.children[firstStep.key];
+    invariant(
+      nextTree !== undefined,
+      `Tried to take path key ${
+        firstStep.key
+      } but it isn't present on object in tree`
     );
+    const newChild = updateAtPath(restStep, updater, nextTree);
     // $FlowFixMe(zach): I think this is safe, might need GADTs for the type checker to understand why
     return dangerouslyReplaceObjectChild(firstStep.key, newChild, tree);
   }
   throw new Error("unreachable");
-}
-
-export function checkShape<T, Node>(
-  value: T,
-  tree: Tree<Node>
-): ShapedTree<T, Node> {
-  if (tree.type === "array") {
-    invariant(Array.isArray(value), "value isn't an array");
-    invariant(
-      value.length === tree.children.length,
-      "value and tree children have different lengths"
-    );
-    tree.children.forEach((child, i) => {
-      checkShape(value[i], child);
-    });
-  }
-  if (tree.type === "object") {
-    invariant(value instanceof Object, "value isn't an object in checkTree");
-    const valueEntries = Object.entries(value);
-    const childrenKeys = new Set(Object.keys(tree.children));
-    invariant(
-      valueEntries.length === childrenKeys.size,
-      "value doesn't have the right number of keys"
-    );
-    valueEntries.forEach(([key, value]) => {
-      invariant(childrenKeys.has(key));
-      checkShape(value, tree.children[key]);
-    });
-  }
-  // leaves are allowed to stand in for complex types in T
-  return tree;
 }
 
 export function shapedArrayChild<E, Node>(
@@ -290,20 +308,6 @@ export function dangerouslySetChildren<E, Node>(
     data: tree.data,
     children: children.map(forgetShape),
   };
-}
-
-// A leaf matches any shape
-export function shapedLeaf<T, Node>(node: Node): ShapedTree<T, Node> {
-  return leaf(node);
-}
-
-export function shapedZipWith<T, A, B, C>(
-  f: (A, B) => C,
-  left: ShapedTree<T, A>,
-  right: ShapedTree<T, B>
-): ShapedTree<T, C> {
-  // Don't actually need the checks here if our invariant holds
-  return strictZipWith(f, left, right);
 }
 
 // Mapping doesn't change the shape

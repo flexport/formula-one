@@ -7,9 +7,11 @@ import Form, {FormContext} from "../Form";
 import ObjectField from "../ObjectField";
 import ArrayField from "../ArrayField";
 import Field from "../Field";
+import type {FieldLink} from "../types";
 
 import {expectLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
+import LinkTap from "../testutils/LinkTap";
 import {forgetShape} from "../shapedTree";
 
 class NaughtyRenderingInput extends React.Component<{|
@@ -41,6 +43,252 @@ function NaughtyRenderingField(props) {
 }
 
 describe("Form", () => {
+  describe("validations", () => {
+    it("runs validations", () => {
+      const objectValidation = jest.fn(() => []);
+      const arrayValidation = jest.fn(() => []);
+      const arrayElValidation = jest.fn(() => []);
+      const fieldValidation = jest.fn(() => []);
+
+      TestRenderer.create(
+        <Form initialValue={{a: ["1", "2"], s: "string"}}>
+          {link => (
+            <ObjectField link={link} validation={objectValidation}>
+              {links => (
+                <>
+                  <ArrayField link={links.a} validation={arrayValidation}>
+                    {links =>
+                      links.map((link, i) => (
+                        <TestField
+                          key={i}
+                          link={link}
+                          validation={arrayElValidation}
+                        />
+                      ))
+                    }
+                  </ArrayField>
+                  <TestField link={links.s} validation={fieldValidation} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      expect(objectValidation).toHaveBeenCalledTimes(1);
+      expect(objectValidation).toHaveBeenCalledWith({
+        a: ["1", "2"],
+        s: "string",
+      });
+
+      expect(arrayValidation).toHaveBeenCalledTimes(1);
+      expect(arrayValidation).toHaveBeenCalledWith(["1", "2"]);
+
+      expect(arrayElValidation).toHaveBeenCalledTimes(2);
+      expect(arrayElValidation).toHaveBeenCalledWith("1");
+      expect(arrayElValidation).toHaveBeenCalledWith("2");
+
+      expect(fieldValidation).toHaveBeenCalledTimes(1);
+      expect(fieldValidation).toHaveBeenCalledWith("string");
+    });
+
+    it("sets validation information on formState", () => {
+      const objectValidation = jest.fn(() => ["object error"]);
+      const arrayValidation = jest.fn(() => ["array", "error"]);
+      const arrayElValidation = jest.fn(s => [`error ${s}`]);
+      const fieldValidation = jest.fn(() => []);
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={{a: ["1", "2"], s: "string"}}>
+          {link => (
+            <ObjectField link={link} validation={objectValidation}>
+              {links => (
+                <>
+                  <ArrayField link={links.a} validation={arrayValidation}>
+                    {links =>
+                      links.map((link, i) => (
+                        <TestField
+                          key={i}
+                          link={link}
+                          validation={arrayElValidation}
+                        />
+                      ))
+                    }
+                  </ArrayField>
+                  <TestField link={links.s} validation={fieldValidation} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      const formState = renderer.root.findByType(ObjectField).instance.props
+        .link.formState;
+
+      let node = formState[1];
+      expect(node.data.errors.client).toEqual(["object error"]);
+      expect(node.data.meta.succeeded).toBe(false);
+
+      node = node.children.a;
+      expect(node.data.errors.client).toEqual(["array", "error"]);
+      expect(node.data.meta.succeeded).toBe(false);
+
+      const child0 = node.children[0];
+      expect(child0.data.errors.client).toEqual(["error 1"]);
+      expect(child0.data.meta.succeeded).toBe(false);
+
+      const child1 = node.children[1];
+      expect(child1.data.errors.client).toEqual(["error 2"]);
+      expect(child1.data.meta.succeeded).toBe(false);
+
+      node = formState[1].children.s;
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+    });
+
+    it("treats no validation as always passing", () => {
+      const renderer = TestRenderer.create(
+        <Form initialValue={{a: ["1", "2"], s: "string"}}>
+          {link => (
+            <ObjectField link={link}>
+              {links => (
+                <>
+                  <ArrayField link={links.a}>
+                    {links =>
+                      links.map((link, i) => <TestField key={i} link={link} />)
+                    }
+                  </ArrayField>
+                  <TestField link={links.s} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      const formState = renderer.root.findByType(ObjectField).instance.props
+        .link.formState;
+
+      let node = formState[1];
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+
+      node = node.children.a;
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+
+      const child0 = node.children[0];
+      expect(child0.data.errors.client).toEqual([]);
+      expect(child0.data.meta.succeeded).toBe(true);
+
+      const child1 = node.children[1];
+      expect(child1.data.errors.client).toEqual([]);
+      expect(child1.data.meta.succeeded).toBe(true);
+
+      node = formState[1].children.s;
+      expect(node.data.errors.client).toEqual([]);
+      expect(node.data.meta.succeeded).toBe(true);
+    });
+
+    it("validates newly mounted Fields", () => {
+      function expectClientErrors(link) {
+        const tree = link.formState[1];
+        return expect(forgetShape(tree).data.errors.client);
+      }
+
+      const renderFn = jest.fn(() => null);
+      const validationA = jest.fn(() => ["error a"]);
+      const validationB = jest.fn(() => ["error b"]);
+      const renderer = TestRenderer.create(
+        <Form initialValue={{key: "hello"}}>
+          {link => (
+            <ObjectField link={link}>
+              {link => (
+                <>
+                  <LinkTap link={link.key}>{renderFn}</LinkTap>
+                  <TestField link={link.key} validation={validationA} />
+                  {/*<TestField link={link.key} validation={validationB} />*/}
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+      expect(renderFn).toHaveBeenCalledTimes(2);
+
+      // on the initial render, we expose "pending" as part of our API
+      // TODO(dmnd): It'd be nice if we could avoid this.
+      expectClientErrors(renderFn.mock.calls[0][0]).toEqual("pending");
+
+      // After the second render the error arrives.
+      expectClientErrors(renderFn.mock.calls[1][0]).toEqual(["error a"]);
+
+      expect(validationA).toHaveBeenCalledTimes(1);
+      expect(validationA).toHaveBeenCalledWith("hello");
+
+      // When a new Field is mounted, we expect the errors to show up.
+      renderFn.mockClear();
+      validationA.mockClear();
+      renderer.update(
+        <Form initialValue={{key: "hello"}}>
+          {link => (
+            <ObjectField link={link}>
+              {link => (
+                <>
+                  <LinkTap link={link.key}>{renderFn}</LinkTap>
+                  <TestField link={link.key} validation={validationA} />
+                  <TestField link={link.key} validation={validationB} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+      expect(renderFn).toHaveBeenCalledTimes(2);
+
+      // There's an initial render where the field hasn't yet been validated
+      // TODO(dmnd): It'd be nice if we could avoid this.
+      expectClientErrors(renderFn.mock.calls[0][0]).toEqual(["error a"]);
+
+      // After the update, the new error should be present.
+      expectClientErrors(renderFn.mock.calls[1][0]).toEqual([
+        "error a",
+        "error b",
+      ]);
+
+      // Validation functions should receive the correct parameters. These
+      // assertions protect against bugs that confuse relative and absolute
+      // paths/values.
+      expect(validationA).toHaveBeenCalledTimes(1);
+      expect(validationA).toHaveBeenCalledWith("hello");
+      expect(validationB).toHaveBeenCalledTimes(1);
+      expect(validationB).toHaveBeenCalledWith("hello");
+    });
+
+    it("updates errors when a new validation function is provided via props", () => {
+      const renderer = TestRenderer.create(
+        <Form initialValue="hello">
+          {link => <TestField link={link} validation={() => ["error 1"]} />}
+        </Form>
+      );
+
+      let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      let errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 1"]);
+
+      renderer.update(
+        <Form initialValue="hello">
+          {link => <TestField link={link} validation={() => ["error 2"]} />}
+        </Form>
+      );
+
+      link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 2"]);
+    });
+  });
+
   describe("Form manages form state", () => {
     it("creates the initial formState from initialValue and serverErrors", () => {
       const onSubmit = jest.fn();
@@ -168,6 +416,16 @@ describe("Form", () => {
       expect(array.data.errors.server).toEqual([]);
       const array0 = array.children[0];
       expect(array0.data.errors.server).toEqual(["inner error"]);
+    });
+
+    it("doesn't cause an infinite loop when using inline validation function", () => {
+      expect(() => {
+        TestRenderer.create(
+          <Form initialValue="hello">
+            {link => <TestField link={link} validation={() => []} />}
+          </Form>
+        );
+      }).not.toThrow(/Maximum update depth exceeded/);
     });
 
     it("collects the initial validations", () => {
@@ -426,6 +684,154 @@ describe("Form", () => {
         })
       );
     });
+
+    it("removes errors when a child unmounts", () => {
+      const validation1 = jest.fn(() => ["error 1"]);
+      const validation2 = jest.fn(() => ["error 2"]);
+
+      class TestForm extends React.Component<{
+        hideSecondField: boolean,
+        link: FieldLink<{string1: string, string2: string}>,
+      }> {
+        render() {
+          return (
+            <ObjectField link={this.props.link}>
+              {links => (
+                <>
+                  <TestField
+                    key={"1"}
+                    link={links.string1}
+                    validation={validation1}
+                  />
+                  {this.props.hideSecondField ? null : (
+                    <TestField
+                      key={"2"}
+                      link={links.string2}
+                      validation={validation2}
+                    />
+                  )}
+                </>
+              )}
+            </ObjectField>
+          );
+        }
+      }
+
+      const renderer = TestRenderer.create(
+        <Form
+          initialValue={{
+            string1: "hello",
+            string2: "world",
+          }}
+        >
+          {link => <TestForm link={link} hideSecondField={false} />}
+        </Form>
+      );
+
+      expect(validation1).toHaveBeenCalledTimes(1);
+      expect(validation2).toHaveBeenCalledTimes(1);
+
+      let rootFormState = renderer.root.findByType(TestForm).instance.props.link
+        .formState[1];
+
+      let string1Errors = rootFormState.children.string1.data.errors.client;
+      expect(string1Errors).toEqual(["error 1"]);
+      let string2Errors = rootFormState.children.string2.data.errors.client;
+      expect(string2Errors).toEqual(["error 2"]);
+
+      // now hide the second field, causing it to unmount and unregister the
+      // validation handler
+      renderer.update(
+        <Form
+          initialValue={{
+            string1: "hello",
+            string2: "world",
+          }}
+        >
+          {link => <TestForm link={link} hideSecondField={true} />}
+        </Form>
+      );
+
+      // no addition validation calls
+      expect(validation1).toHaveBeenCalledTimes(1);
+      expect(validation2).toHaveBeenCalledTimes(1);
+
+      rootFormState = renderer.root.findByType(TestForm).instance.props.link
+        .formState[1];
+
+      // error for string1 remains
+      string1Errors = rootFormState.children.string1.data.errors.client;
+      expect(string1Errors).toEqual(["error 1"]);
+
+      // string2's error is gone
+      string2Errors = rootFormState.children.string2.data.errors.client;
+      expect(string2Errors).toEqual([]);
+    });
+
+    it("runs all validations when a link has multiple fields", () => {
+      const validation1 = jest.fn(() => ["error 1"]);
+      const validation2 = jest.fn(() => ["error 2"]);
+
+      const renderer = TestRenderer.create(
+        <Form initialValue="hello">
+          {link => (
+            <>
+              {/* note both fields point to the same link!! */}
+              <TestField key={"1"} link={link} validation={validation1} />
+              <TestField key={"2"} link={link} validation={validation2} />
+            </>
+          )}
+        </Form>
+      );
+
+      expect(validation1).toHaveBeenCalledTimes(1);
+      expect(validation2).toHaveBeenCalledTimes(1);
+
+      renderer.root.findAllByType(TestInput)[0].instance.change("dmnd");
+
+      expect(validation1).toHaveBeenCalledTimes(2);
+      expect(validation2).toHaveBeenCalledTimes(2);
+
+      renderer.root.findAllByType(TestInput)[1].instance.change("zach");
+
+      expect(validation1).toHaveBeenCalledTimes(3);
+      expect(validation2).toHaveBeenCalledTimes(3);
+    });
+
+    it("only removes errors from validation that was unmounted", () => {
+      const validation1 = jest.fn(() => ["error 1"]);
+      const validation2 = jest.fn(() => ["error 2"]);
+
+      const renderer = TestRenderer.create(
+        <Form initialValue="hello">
+          {link => (
+            <>
+              {/* note both fields point to the same link!! */}
+              <TestField key={"1"} link={link} validation={validation1} />
+              <TestField key={"2"} link={link} validation={validation2} />
+            </>
+          )}
+        </Form>
+      );
+
+      let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      let errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 1", "error 2"]);
+
+      renderer.update(
+        <Form initialValue="hello">
+          {link => (
+            <>
+              <TestField key={"1"} link={link} validation={validation1} />
+            </>
+          )}
+        </Form>
+      );
+
+      link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      errors = link.formState[1].data.errors.client;
+      expect(errors).toEqual(["error 1"]);
+    });
   });
 
   it("Calls onSubmit with the value when submitted", () => {
@@ -529,5 +935,87 @@ describe("Form", () => {
 
     expect(onValidation).toHaveBeenCalledTimes(2);
     expect(onValidation).toHaveBeenLastCalledWith(true);
+  });
+
+  describe("performance", () => {
+    it("batches setState calls when unmounting components", () => {
+      // Record the number of render and commit phases
+      let renders = 0;
+      let commits = 0;
+      class RenderCalls extends React.Component<{||}> {
+        componentDidUpdate() {
+          commits += 1;
+        }
+
+        render() {
+          renders += 1;
+          return (
+            <div>
+              Rendered {renders} times, committed {commits} times.
+            </div>
+          );
+        }
+      }
+
+      const validation = jest.fn();
+
+      // N in the O(N) sense for this perf test.
+      const N = 10;
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={"A string"}>
+          {link => (
+            <>
+              <RenderCalls />
+              <>
+                {[...Array(N).keys()].map(i => (
+                  <Field key={i} link={link} validation={validation}>
+                    {() => <div>input</div>}
+                  </Field>
+                ))}
+              </>
+            </>
+          )}
+        </Form>
+      );
+
+      // One render for initial mount, and another after Form validates
+      // everything from componentDidMount.
+      // TODO(dmnd): Can we adjust implementation to make this only render once?
+      expect(renders).toBe(1 + 1);
+      expect(commits).toBe(1);
+      expect(validation).toBeCalledTimes(N);
+
+      renders = 0;
+      commits = 0;
+      validation.mockClear();
+
+      // now unmount all the fields
+      renderer.update(
+        <Form initialValue={"A string"}>
+          {() => (
+            <>
+              <RenderCalls />
+            </>
+          )}
+        </Form>
+      );
+
+      // We expect only two renders. The first to build the VDOM without Fields.
+      // Then during reconciliation React realizes the Fields have to unmount,
+      // so it calls componentWillUnmount on each Field, which then causes a
+      // setState for each Field. But then we expect that React batches all
+      // these setStates into a single render, not one render per each Field.
+      expect(renders).toBe(1 + 1);
+      expect(renders).not.toBe(1 + N);
+
+      // Similarly, we expect only 2 commits, not one for each Field. You might
+      // expect only a single commit, but componentWillUnmount happens during
+      // the commit phase, so when setState is called React enqueues another
+      // render phase which commits separately. Oh well. At least the number of
+      // commits is constant!
+      expect(commits).toBe(1 + 1);
+      expect(commits).not.toBe(1 + N);
+    });
   });
 });

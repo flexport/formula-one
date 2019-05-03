@@ -6,29 +6,25 @@ import type {
   FieldLink,
   Validation,
   Extras,
-  ClientErrors,
   AdditionalRenderInfo,
   CustomChange,
 } from "./types";
-import {FormContext} from "./Form";
+import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
 import {
   type FormState,
-  setChanged,
   replaceObjectChild,
   setExtrasTouched,
   objectChild,
-  validate,
   getExtras,
   flatRootErrors,
   isValid,
-  changedFormState,
 } from "./formState";
 import {
   type ShapedTree,
-  type ShapedPath,
   mapRoot,
   dangerouslyReplaceObjectChild,
 } from "./shapedTree";
+import type {Path} from "./tree";
 
 type ToFieldLink = <T>(T) => FieldLink<T>;
 type Links<T: {}> = $ObjMap<T, ToFieldLink>;
@@ -44,10 +40,10 @@ type Props<T: {}> = {|
 |};
 
 function makeLinks<T: {}, V>(
+  path: Path,
   formState: FormState<T>,
   onChildChange: (string, FormState<V>) => void,
-  onChildBlur: (string, ShapedTree<V, Extras>) => void,
-  onChildValidation: (string, ShapedPath<V>, ClientErrors) => void
+  onChildBlur: (string, ShapedTree<V, Extras>) => void
 ): Links<T> {
   const [value] = formState;
   return Object.keys(value).reduce((memo, k) => {
@@ -59,9 +55,7 @@ function makeLinks<T: {}, V>(
       onBlur: childTree => {
         onChildBlur(k, childTree);
       },
-      onValidation: (path, errors) => {
-        onChildValidation(k, path, errors);
-      },
+      path: [...path, {type: "object", key: k}],
     };
     memo[k] = l;
     return {
@@ -71,13 +65,9 @@ function makeLinks<T: {}, V>(
   }, {});
 }
 
-type State = {|
-  nonce: number,
-|};
-
 export default class ObjectField<T: {}> extends React.Component<
   Props<T>,
-  State
+  void
 > {
   static contextType = FormContext;
   static _contextType = FormContext;
@@ -85,29 +75,24 @@ export default class ObjectField<T: {}> extends React.Component<
     validation: () => [],
   };
 
-  state = {
-    nonce: 0,
-  };
+  validationFnOps: ValidationOps<T> = validationFnNoOps();
 
-  _initialValidate() {
-    const {
-      link: {formState, onValidation},
-      validation,
-    } = this.props;
-    const [value] = formState;
-    const {errors} = getExtras(formState);
+  componentDidMount() {
+    this.validationFnOps = this.context.registerValidation(
+      this.props.link.path,
+      this.props.validation
+    );
+  }
 
-    if (errors.client === "pending") {
-      onValidation([], validation(value));
+  componentDidUpdate(prevProps: Props<T>) {
+    if (prevProps.validation !== this.props.validation) {
+      this.validationFnOps.replace(this.props.validation);
     }
   }
 
-  componentDidMount() {
-    this._initialValidate();
-  }
-
-  forceChildRemount() {
-    this.setState(({nonce}) => ({nonce: nonce + 1}));
+  componentWillUnmount() {
+    this.validationFnOps.unregister();
+    this.validationFnOps = validationFnNoOps();
   }
 
   _handleChildChange: <V>(string, FormState<V>) => void = <V>(
@@ -122,27 +107,24 @@ export default class ObjectField<T: {}> extends React.Component<
 
     const oldValue = this.props.link.formState[0];
     const newValue = newFormState[0];
-
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
-    let nextFormState: FormState<T>;
+    let validatedFormState: FormState<T>;
     if (customValue) {
-      // Create a fresh form state for the new value.
-      // TODO(zach): It's kind of gross that this is happening outside of Form.
-      nextFormState = changedFormState(customValue);
+      // A custom change occurred, which means the whole object needs to be
+      // revalidated.
+      validatedFormState = this.context.updateTreeAtPath(this.props.link.path, [
+        customValue,
+        newFormState[1],
+      ]);
     } else {
-      nextFormState = newFormState;
+      validatedFormState = this.context.updateNodeAtPath(
+        this.props.link.path,
+        newFormState
+      );
     }
-
-    this.props.link.onChange(
-      setChanged(validate(this.props.validation, nextFormState))
-    );
-
-    // Need to remount children so they will run validations
-    if (customValue) {
-      this.forceChildRemount();
-    }
+    this.props.link.onChange(validatedFormState);
   };
 
   _handleChildBlur: <V>(string, ShapedTree<V, Extras>) => void = <V>(
@@ -158,35 +140,18 @@ export default class ObjectField<T: {}> extends React.Component<
     );
   };
 
-  _handleChildValidation: <V>(string, ShapedPath<V>, ClientErrors) => void = <
-    V
-  >(
-    key: string,
-    childPath: ShapedPath<V>,
-    errors: ClientErrors
-  ) => {
-    const extendedPath = [
-      {
-        type: "object",
-        key,
-      },
-      ...childPath,
-    ];
-    this.props.link.onValidation(extendedPath, errors);
-  };
-
   render() {
     const {formState} = this.props.link;
     const {shouldShowError} = this.context;
 
     const links = makeLinks(
+      this.props.link.path,
       this.props.link.formState,
       this._handleChildChange,
-      this._handleChildBlur,
-      this._handleChildValidation
+      this._handleChildBlur
     );
     return (
-      <React.Fragment key={this.state.nonce}>
+      <React.Fragment>
         {this.props.children(links, {
           touched: getExtras(formState).meta.touched,
           changed: getExtras(formState).meta.changed,
