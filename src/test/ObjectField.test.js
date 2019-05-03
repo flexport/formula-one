@@ -100,7 +100,7 @@ describe("ObjectField", () => {
       const formState = mockFormState({inner: "value"});
       // $FlowFixMe
       formState[1].data.errors = {
-        server: ["A server error"],
+        external: ["An external error"],
         client: ["A client error"],
       };
       const link = mockLink(formState);
@@ -116,7 +116,7 @@ describe("ObjectField", () => {
           changed: false,
           shouldShowErrors: expect.anything(),
           unfilteredErrors: expect.arrayContaining([
-            "A server error",
+            "An external error",
             "A client error",
           ]),
           valid: false,

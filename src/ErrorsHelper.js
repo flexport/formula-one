@@ -1,7 +1,7 @@
 // @flow strict
 
 import * as React from "react";
-import type {FieldLink, ClientErrors, ServerErrors, Err} from "./types";
+import type {FieldLink, ClientErrors, ExternalErrors, Err} from "./types";
 import {FormContext} from "./Form";
 import {getExtras} from "./formState";
 
@@ -10,8 +10,8 @@ function flattenErrors(errors: Err) {
   if (errors.client !== "pending") {
     flatErrors = flatErrors.concat(errors.client);
   }
-  if (errors.server !== "unchecked") {
-    flatErrors = flatErrors.concat(errors.server);
+  if (errors.external !== "unchecked") {
+    flatErrors = flatErrors.concat(errors.external);
   }
   return flatErrors;
 }
@@ -21,7 +21,7 @@ type Props<T> = {|
   +children: ({
     shouldShowErrors: boolean,
     client: ClientErrors,
-    server: ServerErrors,
+    external: ExternalErrors,
     flattened: Array<string>,
   }) => React.Node,
 |};
@@ -33,7 +33,7 @@ export default function ErrorsHelper<T>(props: Props<T>) {
   return props.children({
     shouldShowErrors,
     client: errors.client,
-    server: errors.server,
+    external: errors.external,
     flattened,
   });
 }

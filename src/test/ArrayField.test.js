@@ -79,7 +79,7 @@ describe("ArrayField", () => {
       const formState = mockFormState(["value"]);
       // $FlowFixMe
       formState[1].data.errors = {
-        server: ["A server error"],
+        external: ["An external error"],
         client: ["A client error"],
       };
       const link = mockLink(formState);
@@ -96,7 +96,7 @@ describe("ArrayField", () => {
           changed: false,
           shouldShowErrors: expect.anything(),
           unfilteredErrors: expect.arrayContaining([
-            "A server error",
+            "An external error",
             "A client error",
           ]),
           valid: false,
