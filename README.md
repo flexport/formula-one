@@ -15,13 +15,13 @@ import {Form, Field, ObjectField, FeedbackStrategies} from "formula-one";
 type Person = {
   name: string,
   age: string,
-  side: "Empire" | "Rebels",
+  faction: "Empire" | "Rebels",
 };
 
 const EMPTY_PERSON: Person = {
   name: "",
   age: "",
-  side: "Empire",
+  faction: "Empire",
 };
 
 export default function SimpleExample() {
@@ -30,9 +30,6 @@ export default function SimpleExample() {
       <Form
         initialValue={EMPTY_PERSON}
         onSubmit={person => console.log("Submitted", person)}
-        // TODO(dmnd): Remove following props after new version is published
-        serverErrors={null}
-        feedbackStrategy={FeedbackStrategies.Always}
       >
         {(link, onSubmit) => (
           <ObjectField link={link}>
@@ -62,10 +59,10 @@ export default function SimpleExample() {
                     </label>
                   )}
                 </Field>
-                <Field link={links.side}>
+                <Field link={links.faction}>
                   {(value, errors, onChange) => (
                     <label>
-                      <div>Side</div>
+                      <div>Faction</div>
                       <select
                         onChange={e => onChange(e.target.value)}
                         value={value}
@@ -151,7 +148,7 @@ Some base strategies are exported as fields on the `FeedbackStrategies` object. 
 
 | Strategy identifier                            | Strategy Behavior                                                                    |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `FeedbackStrategies.Always`                    | Always show errors                                                                   |
+| `FeedbackStrategies.Always`                    | Always show errors (default)                                                         |
 | `FeedbackStrategies.Touched`                   | Show errors for fields which have been touched (changed or blurred)                  |
 | `FeedbackStrategies.Changed`                   | Show errors for fields which have been changed                                       |
 | `FeedbackStrategies.ClientValidationSucceeded` | Show errors for fields which have had their validations pass at any time in the past |
@@ -184,7 +181,13 @@ function validate(s: string): Array<string> {
 
 Both `<ObjectField>` and `<ArrayField>` allow a validation to be specified. You can use the `<ErrorHelper>` component to extract the errors from the link.
 
-## Arrays in forms
+### Complex inputs
+
+Even inputs which are complex (e.g. a datepicker) can be wrapped in a `<Field>` wrapper, but validations are tracked at the field level, so you won't be able to use **formula-one** to track changes and validations below the field level. For example, you can't represent a validation error for _just the day part_ of a date if you only have a single `<Field>` wrapping a datepicker. Instead, the error will be associated with the entire date.
+
+## Common use cases
+
+### Arrays in forms
 
 Often, you may want to edit a list of items in a form. **formula-one** exposes an aggregator called `<ArrayField>`, which allows you to manipulate a list of *Field*s.
 
@@ -211,9 +214,6 @@ export default function() {
       <Form
         initialValue={emptyPerson}
         onSubmit={p => console.log("Submitted", p)}
-        // TODO(dmnd): Remove following props after new version is published
-        serverErrors={null}
-        feedbackStrategy={FeedbackStrategies.Always}
       >
         {(link, onSubmit) => (
           <ObjectField link={link}>
@@ -278,17 +278,16 @@ export default function() {
 
 `<ArrayField>` exposes both an array of links to the array elements, but also an object containing mutators for the array:
 
-- `addField(index: number, value: T)`: Add a field at a position in the array
+- `addField(index: number, value: E)`: Add a field at a position in the array
+- `addFields(spans: $ReadOnlyArray<Span<E>>)`: Add multiple fields to an array
 - `removeField(index: number)`: Remove a field at a position in array
+- `filterFields(predicate: (item: E, index: number) => boolean)`: Remove multiple fields from an array
+- `modifyFields({insertSpans: $ReadOnlyArray<Span<E>>, filterPredicate: (item: E, index: number) => boolean})`: Simultaneously add and remove fields from an array
 - `moveField(fromIndex: number, toIndex: number)`: Move a field in an array (preserves metadata for the field)
 
-## Complex inputs
-
-Even inputs which are complex can be wrapped in a `<Field>` wrapper, but validations are tracked at the field level, so you won't be able to use **formula-one** to track changes and validations below the field level.
+where `Span<E>` is a range to be inserted at an index: `[number, $ReadOnlyArray<E>]`.
 
 <!-- ### Form state vs actual model -->
-
-## Common use cases
 
 ### Form in a modal
 
@@ -304,6 +303,85 @@ Example:
     </Modal>
   )}
 </Form>
+```
+
+### Custom changes
+
+Sometimes a change in one field has to be reflected in another field. `<ObjectField>` and `<ArrayField>` have a prop `customChange` to allow this. It will be called when a child Field changes, and by returning a non-null result you can override the whole Currently, no metadata is preserved (all fields are marked **changed**, **touched**, and not **succeeded**) if a `customChange` function is used.
+
+The API is:
+
+```jsx
+// Override nextValue by returning a non-null result
+customChange: <T>(prevValue: T, nextValue: T) => null | T;
+```
+
+[Edit the working example on CodeSandbox](https://codesandbox.io/s/x7nw8w3p34?module=%2Fsrc%2FCustomChange.js)
+
+```jsx
+const SHIPS = {
+  "X-Wing": {faction: "Rebels", name: "X-Wing"},
+  "Y-Wing": {faction: "Rebels", name: "Y-Wing"},
+  "TIE Fighter": {faction: "Empire", name: "TIE Fighter"},
+  "TIE Defender": {faction: "Empire", name: "TIE Defender"},
+};
+
+type Person = {
+  name: string,
+  age: string,
+  faction: "Empire" | "Rebels",
+  ship: string,
+};
+
+function ensureFactionShipConsistency(
+  prevPerson: Person,
+  person: Person
+): null | Person {
+  const ship = SHIPS[person.ship];
+  if (person.faction !== ship.faction) {
+    // person's ship is inconsistent with their faction: need an update
+    if (prevPerson.ship !== person.ship) {
+      // ship changed; update faction to match
+      return {...person, faction: ship.faction};
+    } else if (prevPerson.faction !== person.faction) {
+      // faction changed; give them a ship from their new faction
+      const newShip = Object.keys(SHIPS).find(
+        x => SHIPS[x].faction === person.faction
+      );
+      return {...person, ship: newShip};
+    } else {
+      throw new Error("unreachable");
+    }
+  } else {
+    return null;
+  }
+}
+
+export default function CustomChange() {
+  return (
+    <div className="App">
+      <Form
+        initialValue={EMPTY_PERSON}
+        onSubmit={person => console.log("Submitted", person)}
+      >
+        {(link, onSubmit) => (
+          <ObjectField link={link} customChange={ensureFactionShipConsistency}>
+            {links => (
+              <>
+                <Field link={links.faction}>{/*...*/}</Field>
+                <Field link={links.ship}>{/*...*/}</Field>
+
+                <div>
+                  <button onClick={onSubmit}>Submit</button>
+                </div>
+              </>
+            )}
+          </ObjectField>
+        )}
+      </Form>
+    </div>
+  );
+}
 ```
 
 ### External validation
@@ -324,17 +402,17 @@ could be used in this form:
 ```jsx
 <Form serverErrors={serverErrors}>
   {(link, handleSubmit) => (
-  <>
-    <ObjectField link={link}>
-      {links => (
-        <>
-          <StringField link={links.name} />
-          <StringField link={links.email} />
-        </>
-      )}
-    </ObjectField>
-    <button onClick={handleSubmit}>Submit</button>
-  </>
+    <>
+      <ObjectField link={link}>
+        {links => (
+          <>
+            <StringField link={links.name} />
+            <StringField link={links.email} />
+          </>
+        )}
+      </ObjectField>
+      <button onClick={handleSubmit}>Submit</button>
+    </>
   )}
 </Form>
 ```
@@ -360,25 +438,25 @@ An example of how these data could be used:
 ```jsx
 <Form onSubmit={handleSubmit}>
   {(link, handleSubmit, {valid}) => (
-  <>
-    <Field link={link}>
-      {(value, errors, onChange, onBlur, {changed}) => (
-        <label>
-          Name
-          <input
-            type="text"
-            value={value}
-            onChange={onChange}
-            onBlur={onBlur}
-          />
-          {changed ? "(Modified)" : null}
-        </label>
-      )}
-    </Field>
-    <button disabled={!valid} onClick={() => handleSubmit()}>
-      Submit
-    </button>
-  </>
+    <>
+      <Field link={link}>
+        {(value, errors, onChange, onBlur, {changed}) => (
+          <label>
+            Name
+            <input
+              type="text"
+              value={value}
+              onChange={onChange}
+              onBlur={onBlur}
+            />
+            {changed ? "(Modified)" : null}
+          </label>
+        )}
+      </Field>
+      <button disabled={!valid} onClick={() => handleSubmit()}>
+        Submit
+      </button>
+    </>
   )}
 </Form>
 ```
@@ -400,13 +478,13 @@ function handleSubmit(value: User, saveOrSubmit: "save" | "submit") {
 
 <Form onSubmit={handleSubmit}>
   {(link, handleSubmit) => (
-  <>
-    <UserField link={link} />
-    <div>
-      <button onClick={() => handleSubmit("save")}>Save</button>
-      <button onClick={() => handleSubmit("submit")}>Submit</button>
-    </div>
-  </>
+    <>
+      <UserField link={link} />
+      <div>
+        <button onClick={() => handleSubmit("save")}>Save</button>
+        <button onClick={() => handleSubmit("submit")}>Submit</button>
+      </div>
+    </>
   )}
 </Form>;
 ```
@@ -416,7 +494,9 @@ function handleSubmit(value: User, saveOrSubmit: "save" | "submit") {
 It is easy to submit a **formula-one** form using the `handleSubmit` argument provided to `<Form>`'s render prop, but sometimes you need to submit a `<Form>` from outside. This is possible using the `submit()` method available on `<Form>` along with a React ref to that `<Form>` element. This `submit()` method can also receive additional user-specified information, as stated above.
 
 ```jsx
-function handleSubmit(value) { /* ... */ }
+function handleSubmit(value) {
+  /* ... */
+}
 
 class MyExternalButtonExample extends React.Component<Props> {
   form: null | React.Element<typeof Form>;
@@ -442,7 +522,7 @@ class MyExternalButtonExample extends React.Component<Props> {
         }}
         onSubmit={handleSubmit}
       >
-        {link => (<UserField link={link} />)}
+        {link => <UserField link={link} />}
       </Form>
       <button onClick={this.handleSubmitClick}>Submit</button>
     </div>;

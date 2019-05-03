@@ -1,12 +1,22 @@
 # Changelog
 
-### v0.9.0-alpha
+### v0.9.0
 
-- Add `customChange` prop to `ObjectField` and `ArrayField`. This allows changes in one part of the object to affect other parts of the form. Currently, no metadata is preserved (all fields are marked **changed** and **touched**) if a `customChange` function is used. This will be addressed in a future API.
+#### Breaking changes
 
-  **Warning**: Rendering a component which calls `onChange` during mount under a non-null returning `customChange` will result in an infinite render loop.
+- Rename `serverErrors` to `externalErrors`. Validation errors from outside Formula One aren't necessarily from a server. This prop is also no longer a required parameter to `Form`, so only set it if you need it.
+- Bump internal flow version to 0.95.1.
 
-  **Warning**: returning non-null from `customChange` forces a remount of all children. This can cause unintended consequences such as loss of focus on inputs. This will be fixed in a future 0.9 release.
+#### New features
+
+- Add `customChange` prop to `ObjectField` and `ArrayField`. This allows changes in one part of the object to affect other parts of the form. Currently, no metadata is preserved (all fields are marked **changed**, **touched**, and **succeeded** loses history) if a `customChange` function is used. This will be addressed in a future API.
+
+  The API is:
+
+  ```js
+  // Override nextValue by returning a non-null result
+  customChange: <T>(prevValue: T, nextValue: T) => null | T;
+  ```
 
 - Add `addFields`, `filterFields`, and `modifyFields` array manipulators. These are currently necessary due to the non-atomic nature of the current `addField` and `removeField` manipulators. They will be made atomic in a future version.
 
@@ -29,8 +39,11 @@
   }) => void
   ```
 
-- Fix flow types for ErrorHelper.
-- Bump internal flow version to 0.95.1
+- `Form`'s `feedbackStrategy` prop now defaults to `Always`, which is convenient while building a form, though you'll likely want to pick another option for better UX in production.
+
+#### Minor changes
+
+- Fix flow types for `ErrorHelper`.
 
 ### v0.8.2
 
