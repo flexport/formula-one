@@ -9,7 +9,12 @@ import type {
   AdditionalRenderInfo,
   CustomChange,
 } from "./types";
-import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
+import {
+  FormContext,
+  type FormContextPayload,
+  type ValidationOps,
+  validationFnNoOps,
+} from "./Form";
 import {
   type FormState,
   replaceObjectChild,
@@ -70,6 +75,7 @@ export default class ObjectField<T: {}> extends React.Component<
   void
 > {
   static contextType = FormContext;
+  context: FormContextPayload<T>;
   static _contextType = FormContext;
   static defaultProps = {
     validation: () => [],

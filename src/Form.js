@@ -53,7 +53,7 @@ export function validationFnNoOps<T>(): ValidationOps<T> {
   return noOps;
 }
 
-export type FormContextPayload = {|
+export type FormContextPayload<T> = {|
   shouldShowError: (metaField: MetaField) => boolean,
   // These values are taken into account in shouldShowError, but are also
   // available in their raw form, for convenience.
@@ -61,23 +61,21 @@ export type FormContextPayload = {|
   submitted: boolean,
   registerValidation: (
     path: Path,
-    fn: (mixed) => Array<string>
-  ) => ValidationOps<mixed>,
-  // TODO(dmnd): Try to get rid of * here by writing a type-level function of
-  // Path and FormState<T>
-  applyCustomChangeToTree: (Path, FormState<*>) => FormState<*>,
-  applyChangeToNode: (Path, FormState<*>) => FormState<*>,
+    fn: (T) => Array<string>
+  ) => ValidationOps<T>,
+  applyCustomChangeToTree: (Path, FormState<T>) => FormState<T>,
+  applyChangeToNode: (Path, FormState<T>) => FormState<T>,
 |};
-export const FormContext: React.Context<FormContextPayload> = React.createContext(
-  {
-    shouldShowError: () => true,
-    pristine: false,
-    submitted: true,
-    registerValidation: () => ({replace: () => {}, unregister: () => {}}),
-    applyCustomChangeToTree: (path, formState) => formState,
-    applyChangeToNode: (path, formState) => formState,
-  }
-);
+export const FormContext: React.Context<
+  FormContextPayload<mixed>
+> = React.createContext({
+  shouldShowError: () => true,
+  pristine: false,
+  submitted: true,
+  registerValidation: () => ({replace: () => {}, unregister: () => {}}),
+  applyCustomChangeToTree: (path, formState) => formState,
+  applyChangeToNode: (path, formState) => formState,
+});
 
 function applyExternalErrorsToFormState<T>(
   externalErrors: null | {[path: string]: Array<string>},
@@ -445,12 +443,21 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     });
   };
 
-  handleRegisterValidation = (path: Path, fn: mixed => Array<string>) => {
+  handleRegisterValidation = <NodeT>(
+    path: Path,
+    fn: NodeT => Array<string>
+  ): ValidationOps<NodeT> => {
+    // NodeT is for the benefit of callers only. Internally we have no idea what
+    // type it is, so cast it to mixed for storage.
+    // flowlint-next-line unclear-type:off
+    const castedFn: mixed => Array<string> = (fn: any);
+
     const encodedPath = encodePath(path);
     let fieldId = nextFieldId();
 
     const map = this.validations.get(encodedPath) || new Map();
-    map.set(fieldId, fn);
+
+    map.set(fieldId, castedFn);
     this.validations.set(encodedPath, map);
 
     if (this.initialValidationComplete) {
@@ -461,29 +468,35 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     }
 
     return {
-      replace: fn => this.replaceValidation(path, fieldId, fn),
+      replace: (fn: NodeT => Array<string>) =>
+        this.replaceValidation(path, fieldId, fn),
       unregister: () => this.unregisterValidation(path, fieldId),
     };
   };
 
-  replaceValidation = (
+  replaceValidation = <NodeT>(
     path: Path,
     fieldId: number,
     // TODO(dmnd): It shoud be possible replace a validation function with null
-    fn: mixed => Array<string>
+    fn: NodeT => Array<string>
   ) => {
+    // NodeT is for the benefit of callers only. Internally we have no idea what
+    // type it is, so cast it to mixed for storage.
+    // flowlint-next-line unclear-type:off
+    const castedFn: mixed => Array<string> = (fn: any);
+
     const encodedPath = encodePath(path);
     const map = this.validations.get(encodedPath);
     invariant(map != null, "Expected to find handler map");
 
     const oldFn = map.get(fieldId);
     invariant(oldFn != null, "Expected to find previous validation function");
-    map.set(fieldId, fn);
+    map.set(fieldId, castedFn);
 
     // Now that the old validation is gone, make sure there are no left over
     // errors from it.
     const value = getValueAtPath(path, this.state.formState[0]);
-    if (arrayEquals(oldFn(value), fn(value))) {
+    if (arrayEquals(oldFn(value), castedFn(value))) {
       // The errors haven't changed, so don't bother calling setState.
       // You might think this is a silly performance optimization but actually
       // we need this for annoying React reasons:

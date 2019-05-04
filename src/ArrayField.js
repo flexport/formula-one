@@ -27,7 +27,12 @@ import {
   zip,
   unzip,
 } from "./utils/array";
-import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
+import {
+  FormContext,
+  type FormContextPayload,
+  type ValidationOps,
+  validationFnNoOps,
+} from "./Form";
 import {
   type FormState,
   replaceArrayChild,
@@ -91,6 +96,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     validation: () => [],
   };
   static contextType = FormContext;
+  context: FormContextPayload<Array<E>>;
 
   validationFnOps: ValidationOps<Array<E>> = validationFnNoOps();
 
@@ -158,13 +164,13 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
   };
 
-  _validateThenApplyChange = <E>(formState: FormState<Array<E>>) => {
+  _validateThenApplyChange(formState: FormState<Array<E>>) {
     const validatedFormState = this.context.applyChangeToNode(
       this.props.link.path,
       formState
     );
     this.props.link.onChange(validatedFormState);
-  };
+  }
 
   _addChildField: (number, E) => void = (index: number, childValue: E) => {
     const [oldValue, oldTree] = this.props.link.formState;
@@ -182,6 +188,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       ),
       oldTree
     );
+
     this._validateThenApplyChange([newValue, newTree]);
   };
 
