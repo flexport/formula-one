@@ -42,6 +42,15 @@ function NaughtyRenderingField(props) {
   );
 }
 
+function expectMetaTouched(meta, value) {
+  expect(meta).toEqual(
+    expect.objectContaining({
+      touched: value,
+      changed: value,
+    })
+  );
+}
+
 describe("Form", () => {
   describe("validations", () => {
     it("runs validations", () => {
@@ -128,22 +137,27 @@ describe("Form", () => {
 
       let node = formState[1];
       expect(node.data.errors.client).toEqual(["object error"]);
+      expectMetaTouched(node.data.meta, false);
       expect(node.data.meta.succeeded).toBe(false);
 
       node = node.children.a;
       expect(node.data.errors.client).toEqual(["array", "error"]);
+      expectMetaTouched(node.data.meta, false);
       expect(node.data.meta.succeeded).toBe(false);
 
       const child0 = node.children[0];
       expect(child0.data.errors.client).toEqual(["error 1"]);
-      expect(child0.data.meta.succeeded).toBe(false);
+      expectMetaTouched(node.data.meta, false);
+      expect(node.data.meta.succeeded).toBe(false);
 
       const child1 = node.children[1];
       expect(child1.data.errors.client).toEqual(["error 2"]);
-      expect(child1.data.meta.succeeded).toBe(false);
+      expectMetaTouched(node.data.meta, false);
+      expect(node.data.meta.succeeded).toBe(false);
 
       node = formState[1].children.s;
       expect(node.data.errors.client).toEqual([]);
+      expectMetaTouched(node.data.meta, false);
       expect(node.data.meta.succeeded).toBe(true);
     });
 
@@ -217,17 +231,28 @@ describe("Form", () => {
       );
       expect(renderFn).toHaveBeenCalledTimes(2);
 
-      // on the initial render, we expose "pending" as part of our API
+      let link, node;
+
+      // Initial render
+      link = renderFn.mock.calls[0][0];
+      // Note that here we expose "pending" as part of our API...
       // TODO(dmnd): It'd be nice if we could avoid this.
-      expectClientErrors(renderFn.mock.calls[0][0]).toEqual("pending");
+      expectClientErrors(link).toEqual("pending");
+      node = forgetShape(link.formState[1]);
+      expect(node.data.meta.succeeded).toBe(false);
+      expectMetaTouched(node.data.meta, false);
 
       // After the second render the error arrives.
-      expectClientErrors(renderFn.mock.calls[1][0]).toEqual(["error a"]);
+      link = renderFn.mock.calls[1][0];
+      expectClientErrors(link).toEqual(["error a"]);
+      node = forgetShape(link.formState[1]);
+      expect(node.data.meta.succeeded).toBe(false);
+      expectMetaTouched(node.data.meta, false);
 
       expect(validationA).toHaveBeenCalledTimes(1);
       expect(validationA).toHaveBeenCalledWith("hello");
 
-      // When a new Field is mounted, we expect the errors to show up.
+      // When a new Field is mounted, we expect the new errors to show up.
       renderFn.mockClear();
       validationA.mockClear();
       renderer.update(
@@ -249,13 +274,18 @@ describe("Form", () => {
 
       // There's an initial render where the field hasn't yet been validated
       // TODO(dmnd): It'd be nice if we could avoid this.
-      expectClientErrors(renderFn.mock.calls[0][0]).toEqual(["error a"]);
+      link = renderFn.mock.calls[0][0];
+      expectClientErrors(link).toEqual(["error a"]);
+      node = forgetShape(link.formState[1]);
+      expect(node.data.meta.succeeded).toBe(false);
+      expectMetaTouched(node.data.meta, false);
 
       // After the update, the new error should be present.
-      expectClientErrors(renderFn.mock.calls[1][0]).toEqual([
-        "error a",
-        "error b",
-      ]);
+      link = renderFn.mock.calls[1][0];
+      expectClientErrors(link).toEqual(["error a", "error b"]);
+      node = forgetShape(link.formState[1]);
+      expect(node.data.meta.succeeded).toBe(false);
+      expectMetaTouched(node.data.meta, false);
 
       // Validation functions should receive the correct parameters. These
       // assertions protect against bugs that confuse relative and absolute

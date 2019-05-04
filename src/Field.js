@@ -61,7 +61,7 @@ export default class Field<T> extends React.Component<Props<T>> {
       formState: [_, oldTree],
       onChange,
     } = this.props.link;
-    const newFormState = this.context.updateNodeAtPath(path, [
+    const newFormState = this.context.applyChangeToNode(path, [
       newValue,
       oldTree,
     ]);

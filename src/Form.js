@@ -65,8 +65,8 @@ export type FormContextPayload = {|
   ) => ValidationOps<mixed>,
   // TODO(dmnd): Try to get rid of * here by writing a type-level function of
   // Path and FormState<T>
-  updateTreeAtPath: (Path, FormState<*>) => FormState<*>,
-  updateNodeAtPath: (Path, FormState<*>) => FormState<*>,
+  applyCustomChangeToTree: (Path, FormState<*>) => FormState<*>,
+  applyChangeToNode: (Path, FormState<*>) => FormState<*>,
 |};
 export const FormContext: React.Context<FormContextPayload> = React.createContext(
   {
@@ -74,8 +74,8 @@ export const FormContext: React.Context<FormContextPayload> = React.createContex
     pristine: false,
     submitted: true,
     registerValidation: () => ({replace: () => {}, unregister: () => {}}),
-    updateTreeAtPath: (path, formState) => formState,
-    updateNodeAtPath: (path, formState) => formState,
+    applyCustomChangeToTree: (path, formState) => formState,
+    applyChangeToNode: (path, formState) => formState,
   }
 );
 
@@ -180,23 +180,14 @@ function getRelativePath(path: Path, prefix: Path) {
 }
 
 /**
- * Deeply updates the FormState tree to reflect a new value. Similar to
- * applyValidationToTree, but in response to a deep update, so updates all child
- * paths too. Used in response to a custom change.
+ * Deeply validates a FormState tree. Importantly, doesn't set changed metadata:
+ * that is the responsibility of the caller.
  */
-function updateTreeAtPath<T>(
+function validateTree<T>(
   prefix: Path,
-  [initialValue, _initialTree]: FormState<T>,
+  [value, tree]: FormState<T>,
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
 ): FormState<T> {
-  // Create a fresh form state for the new value. Note that this overwrites any
-  // existing `succeeded` values with false. `succeeded` will only be set back
-  // to true if and only if the current validation passes. We lose history. For
-  // most use cases this is likely desirible behaviour, but there could be uses
-  // cases for which it isn't desired. We'll fix it if we encounter one of those
-  // use cases.
-  const [value, changedTree] = changedFormState(initialValue);
-
   const validatedTree = [...validations.entries()]
     .filter(([path]) => startsWith(path, prefix))
     .map(([path, validationsMap]) => {
@@ -206,7 +197,7 @@ function updateTreeAtPath<T>(
       const relativePath = getRelativePath(decodePath(path), prefix);
       const valueAtPath = getValueAtPath(relativePath, value);
 
-      // Run all validation functions on x
+      // Run all validation functions on valueAtPath
       const errors = [...validationsMap.values()].reduce(
         (errors, validationFn) => errors.concat(validationFn(valueAtPath)),
         []
@@ -216,8 +207,7 @@ function updateTreeAtPath<T>(
     .reduce(
       (tree, [path, newErrors]) =>
         // Here we don't reset `errors: {external}` or set `meta: {touched: true,
-        // changed: true}`. This is because we already called changedFormState
-        // above.
+        // changed: true}`. This is the responsibility of the caller.
         updateAtPath(
           path,
           ({errors, meta}) => ({
@@ -229,10 +219,30 @@ function updateTreeAtPath<T>(
           }),
           tree
         ),
-      changedTree
+      tree
     );
 
   return [value, validatedTree];
+}
+
+/**
+ * Deeply updates the FormState tree to reflect a new value. Used in response
+ * to a custom change.
+ *
+ * Note that the current implementation discards the existing tree and creates a
+ * fresh form state for the new value. This initially overwrites any existing
+ * `succeeded`, `touched` and `changed` values with false, losing history. For
+ * most use cases this is likely desirable behaviour, but there could be uses
+ * cases for which it isn't desired. We'll fix it if we encounter one of those
+ * use cases.
+ */
+function applyCustomChangeToTree<T>(
+  prefix: Path,
+  [value, _tree]: FormState<T>,
+  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
+): FormState<T> {
+  const customChangedFormState = changedFormState(value);
+  return validateTree(prefix, customChangedFormState, validations);
 }
 
 // Unique id for each field so that errors can be tracked by the fields that
@@ -270,7 +280,7 @@ function validateAtPath(
  *  - calculate & write new client side errors
  *  - ensure that meta reflects that the value has changed
  */
-function updateNodeAtPath<T>(
+function applyChangeToNode<T>(
   path: Path,
   [value, tree]: FormState<T>,
   validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
@@ -376,7 +386,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     // call onChange during cDM.
     this.setState(
       ({formState}) => ({
-        formState: updateTreeAtPath([], formState, this.validations),
+        formState: validateTree([], formState, this.validations),
       }),
       () => {
         this.initialValidationComplete = true;
@@ -425,6 +435,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     this.setState(({formState: [rootValue, tree]}) => {
       const value = getValueAtPath(path, rootValue);
       const errors = validateAtPath(path, value, this.validations);
+      // TODO(dmnd): succeeded isn't set here, that's probably a bug
       const updatedTree = updateAtPath(
         path,
         extras => ({...extras, errors: {...extras.errors, client: errors}}),
@@ -458,6 +469,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   replaceValidation = (
     path: Path,
     fieldId: number,
+    // TODO(dmnd): It shoud be possible replace a validation function with null
     fn: mixed => Array<string>
   ) => {
     const encodedPath = encodePath(path);
@@ -518,10 +530,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         value={{
           shouldShowError: this.props.feedbackStrategy.bind(null, metaForm),
           registerValidation: this.handleRegisterValidation,
-          updateTreeAtPath: (path, formState) =>
-            updateTreeAtPath(path, formState, this.validations),
-          updateNodeAtPath: (path, formState) =>
-            updateNodeAtPath(path, formState, this.validations),
+          applyCustomChangeToTree: (path, formState) =>
+            applyCustomChangeToTree(path, formState, this.validations),
+          applyChangeToNode: (path, formState) =>
+            applyChangeToNode(path, formState, this.validations),
           ...metaForm,
         }}
       >

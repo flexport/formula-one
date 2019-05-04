@@ -78,22 +78,22 @@ describe("Field", () => {
     const formState = mockFormState("Hello world.");
     const link = mockLink(formState);
 
-    const updateNodeAtPath = jest.fn((path, formState) => formState);
+    const applyChangeToNode = jest.fn((path, formState) => formState);
 
     const renderer = TestRenderer.create(
-      <TestForm updateNodeAtPath={updateNodeAtPath}>
+      <TestForm applyChangeToNode={applyChangeToNode}>
         <TestField link={link} />
       </TestForm>
     );
     const inner = renderer.root.findByType(TestInput);
 
-    expect(updateNodeAtPath).toHaveBeenCalledTimes(0);
+    expect(applyChangeToNode).toHaveBeenCalledTimes(0);
     expect(link.onChange).toHaveBeenCalledTimes(0);
 
     inner.instance.change("You've got mail");
 
-    expect(updateNodeAtPath).toHaveBeenCalledTimes(1);
-    expect(updateNodeAtPath).toHaveBeenCalledWith(
+    expect(applyChangeToNode).toHaveBeenCalledTimes(1);
+    expect(applyChangeToNode).toHaveBeenCalledWith(
       [],
       ["You've got mail", expect.anything()]
     );
