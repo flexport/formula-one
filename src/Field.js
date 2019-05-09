@@ -3,7 +3,12 @@
 import * as React from "react";
 import type {FieldLink, Validation, Err, AdditionalRenderInfo} from "./types";
 import {mapRoot} from "./shapedTree";
-import {FormContext, type ValidationOps, validationFnNoOps} from "./Form";
+import {
+  FormContext,
+  type FormContextPayload,
+  type ValidationOps,
+  validationFnNoOps,
+} from "./Form";
 import {setExtrasTouched, getExtras, isValid} from "./formState";
 
 type Props<T> = {|
@@ -34,6 +39,7 @@ export default class Field<T> extends React.Component<Props<T>> {
     validation: () => [],
   };
   static contextType = FormContext;
+  context: FormContextPayload<T>;
 
   validationFnOps: ValidationOps<T> = validationFnNoOps();
 

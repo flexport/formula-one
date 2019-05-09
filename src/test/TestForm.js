@@ -5,7 +5,7 @@ import * as React from "react";
 import {FormContext, type FormContextPayload} from "../Form";
 
 type Props = {
-  ...$Shape<{...FormContextPayload}>,
+  ...$Shape<{...FormContextPayload<mixed>}>,
   children: React.Node,
 };
 
