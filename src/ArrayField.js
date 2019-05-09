@@ -131,12 +131,13 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     if (customValue) {
       // A custom change occurred, which means the whole array needs to be
       // revalidated.
-      validatedFormState = this.context.updateTreeAtPath(this.props.link.path, [
-        customValue,
-        newFormState[1],
-      ]);
+      const customChangedFormState = [customValue, newFormState[1]];
+      validatedFormState = this.context.applyCustomChangeToTree(
+        this.props.link.path,
+        customChangedFormState
+      );
     } else {
-      validatedFormState = this.context.updateNodeAtPath(
+      validatedFormState = this.context.applyChangeToNode(
         this.props.link.path,
         newFormState
       );
@@ -158,7 +159,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
   };
 
   _validateThenApplyChange = <E>(formState: FormState<Array<E>>) => {
-    const validatedFormState = this.context.updateNodeAtPath(
+    const validatedFormState = this.context.applyChangeToNode(
       this.props.link.path,
       formState
     );

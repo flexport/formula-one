@@ -15,8 +15,8 @@ export default function TestForm({
   pristine = false,
   submitted = true,
   registerValidation = () => ({replace: () => {}, unregister: () => {}}),
-  updateTreeAtPath = (path, formState) => formState,
-  updateNodeAtPath = (path, formState) => formState,
+  applyCustomChangeToTree = (path, formState) => formState,
+  applyChangeToNode = (path, formState) => formState,
 }: Props = {}) {
   return (
     <FormContext.Provider
@@ -25,8 +25,8 @@ export default function TestForm({
         pristine,
         submitted,
         registerValidation,
-        updateTreeAtPath,
-        updateNodeAtPath,
+        applyCustomChangeToTree,
+        applyChangeToNode,
       }}
     >
       {children}

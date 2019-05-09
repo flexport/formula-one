@@ -114,12 +114,13 @@ export default class ObjectField<T: {}> extends React.Component<
     if (customValue) {
       // A custom change occurred, which means the whole object needs to be
       // revalidated.
-      validatedFormState = this.context.updateTreeAtPath(this.props.link.path, [
-        customValue,
-        newFormState[1],
-      ]);
+      const customChangedFormState = [customValue, newFormState[1]];
+      validatedFormState = this.context.applyCustomChangeToTree(
+        this.props.link.path,
+        customChangedFormState
+      );
     } else {
-      validatedFormState = this.context.updateNodeAtPath(
+      validatedFormState = this.context.applyChangeToNode(
         this.props.link.path,
         newFormState
       );

@@ -147,15 +147,15 @@ describe("ArrayField", () => {
       const link = mockLink(formState);
       const renderFn = jest.fn(() => null);
 
-      const updateNodeAtPath = jest.fn((path, formState) => formState);
+      const applyChangeToNode = jest.fn((path, formState) => formState);
 
       TestRenderer.create(
-        <TestForm updateNodeAtPath={updateNodeAtPath}>
+        <TestForm applyChangeToNode={applyChangeToNode}>
           <ArrayField link={link}>{renderFn}</ArrayField>
         </TestForm>
       );
 
-      expect(updateNodeAtPath).toHaveBeenCalledTimes(0);
+      expect(applyChangeToNode).toHaveBeenCalledTimes(0);
       expect(link.onChange).toHaveBeenCalledTimes(0);
 
       // call a child's onChange
@@ -163,8 +163,8 @@ describe("ArrayField", () => {
       const newElementFormState = mockFormState("newTwo");
       arrayLinks[1].onChange(newElementFormState);
 
-      expect(updateNodeAtPath).toHaveBeenCalledTimes(1);
-      expect(updateNodeAtPath).toHaveBeenCalledWith(
+      expect(applyChangeToNode).toHaveBeenCalledTimes(1);
+      expect(applyChangeToNode).toHaveBeenCalledWith(
         [],
         [["one", "newTwo", "three"], expect.anything()]
       );
@@ -240,6 +240,7 @@ describe("ArrayField", () => {
           expect.anything()
         );
       });
+
       it("validates after entry is added", () => {
         const renderFn = jest.fn(() => null);
         const validation = jest.fn(() => ["an error"]);
