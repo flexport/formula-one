@@ -5,7 +5,7 @@ import type {Path} from "./tree";
 import {type FormState} from "./formState";
 
 export type ClientErrors = Array<string> | "pending";
-export type ExternalErrors = Array<string> | "unchecked";
+export type ExternalErrors = $ReadOnlyArray<string> | "unchecked";
 export type Err = {
   client: ClientErrors,
   external: ExternalErrors,

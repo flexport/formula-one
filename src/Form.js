@@ -78,7 +78,7 @@ export const FormContext: React.Context<
 });
 
 function applyExternalErrorsToFormState<T>(
-  externalErrors: null | {[path: string]: Array<string>},
+  externalErrors: null | {[path: string]: $ReadOnlyArray<string>},
   formState: FormState<T>
 ): FormState<T> {
   const [value, oldTree] = formState;
@@ -94,7 +94,7 @@ function applyExternalErrorsToFormState<T>(
       oldTree
     );
     Object.keys(externalErrors).forEach(key => {
-      const newErrors: Array<string> = externalErrors[key];
+      const newErrors = externalErrors[key];
       const path = shapePath(value, pathFromPathString(key));
 
       if (path != null) {
@@ -311,7 +311,7 @@ type Props<T, ExtraSubmitData> = {|
   +onSubmit: (T, ExtraSubmitData) => void,
   +onChange: T => void,
   +onValidation: boolean => void,
-  +externalErrors: null | {[path: string]: Array<string>},
+  +externalErrors: null | {[path: string]: $ReadOnlyArray<string>},
   +children: (
     link: FieldLink<T>,
     onSubmit: (ExtraSubmitData) => void,
@@ -322,7 +322,7 @@ type State<T> = {
   formState: FormState<T>,
   pristine: boolean,
   submitted: boolean,
-  oldExternalErrors: null | {[path: string]: Array<string>},
+  oldExternalErrors: null | {[path: string]: $ReadOnlyArray<string>},
 };
 export default class Form<T, ExtraSubmitData> extends React.Component<
   Props<T, ExtraSubmitData>,
