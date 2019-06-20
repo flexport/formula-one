@@ -43,7 +43,7 @@
 
 #### Minor changes
 
-- Fix flow types for `ErrorHelper`.
+- Fix flow types for `ErrorsHelper`.
 
 ### v0.8.2
 

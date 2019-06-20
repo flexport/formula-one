@@ -179,7 +179,7 @@ function validate(s: string): Array<string> {
 
 ### Validations on aggregations of *Field*s
 
-Both `<ObjectField>` and `<ArrayField>` allow a validation to be specified. You can use the `<ErrorHelper>` component to extract the errors from the link.
+Both `<ObjectField>` and `<ArrayField>` allow a validation to be specified. You can use the `<ErrorsHelper>` component to extract the errors from the link.
 
 ### Complex inputs
 
