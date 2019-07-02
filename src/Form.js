@@ -11,6 +11,7 @@ import type {
   Extras,
   FieldLink,
   AdditionalRenderInfo,
+  Validation,
 } from "./types";
 import {type Direction} from "./tree";
 import {
@@ -41,6 +42,9 @@ export type ValidationOps<T> = {
   unregister: () => void,
   replace: (fn: (T) => Array<string>) => void,
 };
+
+type FieldId = number;
+type ValidationMap = Map<EncodedPath, Map<FieldId, Validation<mixed>>>;
 
 const noOps = {
   unregister() {},
@@ -184,9 +188,14 @@ function getRelativePath(path: Path, prefix: Path) {
 function validateTree<T>(
   prefix: Path,
   [value, tree]: FormState<T>,
-  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
+  validations: ValidationMap
 ): FormState<T> {
-  const validatedTree = [...validations.entries()]
+  // TODO(dmnd): Remove the type declarations once [this flow bug][1] is fixed.
+  // [1]: https://github.com/facebook/flow/issues/7881
+  const entries: Array<[EncodedPath, Map<FieldId, Validation<mixed>>]> = [
+    ...validations.entries(),
+  ];
+  const newErrors: Array<[Path, Array<string>]> = entries
     .filter(([path]) => startsWith(path, prefix))
     .map(([path, validationsMap]) => {
       // Note that value is not the root value, it's the value at this path.
@@ -196,29 +205,31 @@ function validateTree<T>(
       const valueAtPath = getValueAtPath(relativePath, value);
 
       // Run all validation functions on valueAtPath
-      const errors = [...validationsMap.values()].reduce(
+      const paths = [...validationsMap.values()];
+      const errors = paths.reduce(
         (errors, validationFn) => errors.concat(validationFn(valueAtPath)),
         []
       );
       return [relativePath, errors];
-    })
-    .reduce(
-      (tree, [path, newErrors]) =>
-        // Here we don't reset `errors: {external}` or set `meta: {touched: true,
-        // changed: true}`. This is the responsibility of the caller.
-        updateAtPath(
-          path,
-          ({errors, meta}) => ({
-            errors: {...errors, client: newErrors},
-            meta: {
-              ...meta,
-              succeeded: meta.succeeded || newErrors.length === 0,
-            },
-          }),
-          tree
-        ),
-      tree
-    );
+    });
+
+  const validatedTree = newErrors.reduce(
+    (tree, [path, newErrors]) =>
+      // Here we don't reset `errors: {external}` or set `meta: {touched: true,
+      // changed: true}`. This is the responsibility of the caller.
+      updateAtPath(
+        path,
+        ({errors, meta}) => ({
+          errors: {...errors, client: newErrors},
+          meta: {
+            ...meta,
+            succeeded: meta.succeeded || newErrors.length === 0,
+          },
+        }),
+        tree
+      ),
+    tree
+  );
 
   return [value, validatedTree];
 }
@@ -237,7 +248,7 @@ function validateTree<T>(
 function applyCustomChangeToTree<T>(
   prefix: Path,
   [value, _tree]: FormState<T>,
-  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
+  validations: ValidationMap
 ): FormState<T> {
   const customChangedFormState = changedFormState(value);
   return validateTree(prefix, customChangedFormState, validations);
@@ -247,7 +258,7 @@ function applyCustomChangeToTree<T>(
 // produced them. This is necessary because it's possible for multiple fields
 // to reference the same link "aliasing".
 let _nextFieldId = 0;
-function nextFieldId() {
+function nextFieldId(): FieldId {
   return _nextFieldId++;
 }
 
@@ -258,7 +269,7 @@ function nextFieldId() {
 function validateAtPath(
   pathToValue: Path,
   valueAtPath: mixed, // TODO(dmnd): Better typechecking with ShapedPath?
-  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
+  validations: ValidationMap
 ): Array<string> {
   const map = validations.get(encodePath(pathToValue));
   if (!map) {
@@ -281,7 +292,7 @@ function validateAtPath(
 function applyChangeToNode<T>(
   path: Path,
   [value, tree]: FormState<T>,
-  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>
+  validations: ValidationMap
 ): FormState<T> {
   const errors = validateAtPath(path, value, validations);
   return [
@@ -353,7 +364,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     return null;
   }
 
-  validations: Map<EncodedPath, Map<number, (mixed) => Array<string>>>;
+  validations: ValidationMap;
   initialValidationComplete = false;
 
   constructor(props: Props<T, ExtraSubmitData>) {
@@ -476,7 +487,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
 
   replaceValidation = <NodeT>(
     path: Path,
-    fieldId: number,
+    fieldId: FieldId,
     // TODO(dmnd): It shoud be possible replace a validation function with null
     fn: NodeT => Array<string>
   ) => {
@@ -514,7 +525,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     this.recomputeErrorsAtPathAndRender(path);
   };
 
-  unregisterValidation = (path: Path, fieldId: number) => {
+  unregisterValidation = (path: Path, fieldId: FieldId) => {
     const encodedPath = encodePath(path);
     const map = this.validations.get(encodedPath);
     invariant(map != null, "Couldn't find handler map during unregister");
