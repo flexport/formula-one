@@ -625,12 +625,12 @@ describe("ArrayField", () => {
       const inner = renderer.root.findAllByType(TestInput)[0];
       inner.instance.change("zach");
 
-      // Validate the whole subtree due to the customChange child validates
-      // once. Note that child validation will be called 3 times. Once after the
-      // change, then twice more after the customChange triggers a validation fo
-      // the entire subtree.
+      // Note that child validation will be called 5 times:
+      // * Once in response to the change
+      // * Twice more from the arrayEquals test in replaceValidation
+      // * Twice more from recomputeErrorsAtPathAndRender
       expect(parentValidation).toHaveBeenCalledTimes(1);
-      expect(childValidation).toHaveBeenCalledTimes(1 + 2);
+      expect(childValidation).toHaveBeenCalledTimes(1 + 2 + 2);
 
       const link = renderer.root.findByType(ArrayField).instance.props.link;
       expect(link.formState).toEqual([["1", "2"], expect.anything()]);

@@ -43,6 +43,7 @@ import {
   isValid,
 } from "./formState";
 import type {Path} from "./tree";
+import alwaysValid from "./alwaysValid";
 
 type ToFieldLink = <T>(T) => FieldLink<T>;
 type Links<E> = Array<$Call<ToFieldLink, E>>;
@@ -93,7 +94,7 @@ function makeLinks<E>(
 
 export default class ArrayField<E> extends React.Component<Props<E>, void> {
   static defaultProps = {
-    validation: () => [],
+    validation: alwaysValid,
   };
   static contextType = FormContext;
   context: FormContextPayload<Array<E>>;
@@ -107,10 +108,8 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
   }
 
-  componentDidUpdate(prevProps: Props<E>) {
-    if (prevProps.validation !== this.props.validation) {
-      this.validationFnOps.replace(this.props.validation);
-    }
+  componentDidUpdate() {
+    this.validationFnOps.replace(this.props.validation);
   }
 
   componentWillUnmount() {

@@ -30,6 +30,7 @@ import {
   dangerouslyReplaceObjectChild,
 } from "./shapedTree";
 import type {Path} from "./tree";
+import alwaysValid from "./alwaysValid";
 
 type ToFieldLink = <T>(T) => FieldLink<T>;
 type Links<T: {}> = $ObjMap<T, ToFieldLink>;
@@ -78,7 +79,7 @@ export default class ObjectField<T: {}> extends React.Component<
   context: FormContextPayload<T>;
   static _contextType = FormContext;
   static defaultProps = {
-    validation: () => [],
+    validation: alwaysValid,
   };
 
   validationFnOps: ValidationOps<T> = validationFnNoOps();
@@ -90,10 +91,8 @@ export default class ObjectField<T: {}> extends React.Component<
     );
   }
 
-  componentDidUpdate(prevProps: Props<T>) {
-    if (prevProps.validation !== this.props.validation) {
-      this.validationFnOps.replace(this.props.validation);
-    }
+  componentDidUpdate() {
+    this.validationFnOps.replace(this.props.validation);
   }
 
   componentWillUnmount() {

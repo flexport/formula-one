@@ -37,6 +37,7 @@ import {
   type EncodedPath,
 } from "./EncodedPath";
 import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
+import alwaysValid from "./alwaysValid";
 
 export type ValidationOps<T> = {
   unregister: () => void,
@@ -236,23 +237,26 @@ function validateTree<T>(
 }
 
 /**
- * Deeply updates the FormState tree to reflect a new value. Used in response
- * to a custom change.
+ * In response to a custom change, remove all validation functions from the
+ * tree.
  *
- * Note that the current implementation discards the existing tree and creates a
- * fresh form state for the new value. This initially overwrites any existing
- * `succeeded`, `touched` and `changed` values with false, losing history. For
- * most use cases this is likely desirable behaviour, but there could be uses
- * cases for which it isn't desired. We'll fix it if we encounter one of those
- * use cases.
+ * Note this does not remove validation functions at prefix itself. Only child
+ * paths are removed.
  */
-function applyCustomChangeToTree<T>(
+function removeChildValidationsAtPath(
   prefix: Path,
-  [value, _tree]: FormState<T>,
   validations: ValidationMap
-): FormState<T> {
-  const customChangedFormState = changedFormState(value);
-  return validateTree(prefix, customChangedFormState, validations);
+): ValidationMap {
+  const newValidations = new Map(validations);
+  const paths = [...newValidations.keys()].filter(
+    path => startsWith(path, prefix) && path !== encodePath(prefix)
+  );
+
+  for (const path of paths) {
+    newValidations.set(path, new Map());
+  }
+
+  return newValidations;
 }
 
 // Unique id for each field so that errors can be tracked by the fields that
@@ -367,6 +371,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
 
   validations: ValidationMap;
   initialValidationComplete = false;
+  pathForPostCommitValidation: null | Path = null;
 
   constructor(props: Props<T, ExtraSubmitData>) {
     super(props);
@@ -421,14 +426,21 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   _handleChange: (newValue: FormState<T>) => void = (
     newState: FormState<T>
   ) => {
-    this.setState({formState: newState, pristine: false});
+    this.setState({formState: newState, pristine: false}, () => {
+      if (this.pathForPostCommitValidation !== null) {
+        this.recomputeErrorsAtPathAndRender(this.pathForPostCommitValidation);
+        this.pathForPostCommitValidation = null;
+      }
+    });
     this.props.onChange(newState[0]);
     // TODO(zach): This is a bit gross, but the general purpose here is
     //   that onValidation outside the form (in the public API) doesn't
     //   correspond directly to the internal onValidation. Internally
     //   onValidation means (on initial validation). Externally, it means
     //   on any validation.
-    this.props.onValidation(isValid(newState));
+    if (this.pathForPostCommitValidation === null) {
+      this.props.onValidation(isValid(newState));
+    }
   };
 
   _handleBlur: OnBlur<T> = (newTree: ShapedTree<T, Extras>) => {
@@ -451,7 +463,12 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         extras => ({...extras, errors: {...extras.errors, client: errors}}),
         tree
       );
-      return {formState: [rootValue, updatedTree]};
+
+      const formState = [rootValue, updatedTree];
+
+      this.props.onValidation(isValid(formState));
+
+      return {formState};
     });
   };
 
@@ -489,7 +506,6 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   replaceValidation = <NodeT>(
     path: Path,
     fieldId: FieldId,
-    // TODO(dmnd): It shoud be possible replace a validation function with null
     fn: NodeT => Array<string>
   ) => {
     // NodeT is for the benefit of callers only. Internally we have no idea what
@@ -501,8 +517,13 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     const map = this.validations.get(encodedPath);
     invariant(map != null, "Expected to find handler map");
 
-    const oldFn = map.get(fieldId);
-    invariant(oldFn != null, "Expected to find previous validation function");
+    const oldFn = map.get(fieldId) || alwaysValid;
+
+    // bail out if the validation function didn't change.
+    if (oldFn === fn) {
+      return;
+    }
+
     map.set(fieldId, castedFn);
 
     // Now that the old validation is gone, make sure there are no left over
@@ -555,8 +576,18 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         value={{
           shouldShowError: this.props.feedbackStrategy.bind(null, metaForm),
           registerValidation: this.handleRegisterValidation,
-          applyCustomChangeToTree: (path, formState) =>
-            applyCustomChangeToTree(path, formState, this.validations),
+          applyCustomChangeToTree: (path, [value, _tree]) => {
+            this.validations = removeChildValidationsAtPath(
+              path,
+              this.validations
+            );
+            invariant(
+              this.pathForPostCommitValidation === null,
+              "Unexpected pending validation. This is a bug in Formula One, please report it."
+            );
+            this.pathForPostCommitValidation = path;
+            return changedFormState(value);
+          },
           applyChangeToNode: (path, formState) =>
             applyChangeToNode(path, formState, this.validations),
           ...metaForm,

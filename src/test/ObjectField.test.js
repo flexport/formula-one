@@ -435,12 +435,12 @@ describe("ObjectField", () => {
       const inner = renderer.root.findAllByType(TestInput)[0];
       inner.instance.change("zach");
 
-      // Validate the whole subtree due to the customChange child validates
-      // once. Note that child validation will be called 3 times. Once after the
-      // change, then twice more after the customChange triggers a validation fo
-      // the entire subtree.
+      // Note that child validation will be called 5 times:
+      // * Once in response to the change
+      // * Twice more from the arrayEquals test in replaceValidation
+      // * Twice more from recomputeErrorsAtPathAndRender
       expect(parentValidation).toHaveBeenCalledTimes(1);
-      expect(childValidation).toHaveBeenCalledTimes(1 + 2);
+      expect(childValidation).toHaveBeenCalledTimes(1 + 2 + 2);
 
       const link = renderer.root.findByType(ObjectField).instance.props.link;
       expect(link.formState).toEqual([
@@ -532,7 +532,7 @@ describe("ObjectField", () => {
       objectLinks.string.onChange(mockFormState("newString"));
 
       // onChange should be called with the result of customChange
-      expect(linkTapFn).toHaveBeenCalledTimes(1);
+      expect(linkTapFn).toHaveBeenCalledTimes(2);
       expect(linkTapFn.mock.calls[0][0].formState).toEqual([
         {
           string: "A whole new value",
@@ -540,6 +540,52 @@ describe("ObjectField", () => {
         },
         expect.anything(),
       ]);
+    });
+
+    it("doesn't crash when object changes shape", () => {
+      type Union = {|tag: "a", a: string|} | {|tag: "b", b: string|};
+      const initialValue: Union = {tag: "a", a: "a"};
+
+      function customChange(
+        prevValue: Union,
+        nextValue: {tag: "a"} | {tag: "b"}
+      ): null | Union {
+        if (prevValue.tag !== "a" && nextValue.tag === "a") {
+          return {tag: "a", a: ""};
+        } else if (prevValue.tag !== "b" && nextValue.tag === "b") {
+          return {tag: "b", b: ""};
+        }
+        return null;
+      }
+
+      function App() {
+        return (
+          <Form initialValue={initialValue}>
+            {(link, _onSubmit, {value}) => (
+              <ObjectField link={link} customChange={customChange}>
+                {link => (
+                  <>
+                    <TestField link={link.tag} />
+                    {value.tag === "a" ? (
+                      // $FlowFixMe(dmnd)
+                      <TestField link={link.a} />
+                    ) : (
+                      // $FlowFixMe(dmnd)
+                      <TestField link={link.b} />
+                    )}
+                  </>
+                )}
+              </ObjectField>
+            )}
+          </Form>
+        );
+      }
+
+      const renderer = TestRenderer.create(<App />);
+      const inner = renderer.root.findAllByType(TestInput)[0];
+      expect(() => {
+        inner.instance.change("b");
+      }).not.toThrow();
     });
   });
 });

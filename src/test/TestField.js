@@ -3,6 +3,7 @@
 import * as React from "react";
 import type {FieldLink, Validation} from "../types";
 import Field from "../Field";
+import alwaysValid from "../alwaysValid";
 
 export class TestInput extends React.Component<{|
   value: string,
@@ -29,7 +30,7 @@ type Props = {|
 
 export default class TestField extends React.Component<Props> {
   static defaultProps = {
-    validation: () => [],
+    validation: alwaysValid,
   };
 
   render() {
