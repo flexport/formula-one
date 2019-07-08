@@ -45,6 +45,7 @@ export type ValidationOps<T> = {
 
 type FieldId = number;
 type ValidationMap = Map<EncodedPath, Map<FieldId, Validation<mixed>>>;
+type ExternalErrors = null | {+[path: string]: $ReadOnlyArray<string>};
 
 const noOps = {
   unregister() {},
@@ -82,7 +83,7 @@ export const FormContext: React.Context<
 });
 
 function applyExternalErrorsToFormState<T>(
-  externalErrors: null | {[path: string]: $ReadOnlyArray<string>},
+  externalErrors: ExternalErrors,
   formState: FormState<T>
 ): FormState<T> {
   const [value, oldTree] = formState;
@@ -322,7 +323,7 @@ type Props<T, ExtraSubmitData> = {|
   +onSubmit: (T, ExtraSubmitData) => void,
   +onChange: T => void,
   +onValidation: boolean => void,
-  +externalErrors: null | {[path: string]: $ReadOnlyArray<string>},
+  +externalErrors: ExternalErrors,
   +children: (
     link: FieldLink<T>,
     onSubmit: (ExtraSubmitData) => void,
@@ -333,7 +334,7 @@ type State<T> = {
   formState: FormState<T>,
   pristine: boolean,
   submitted: boolean,
-  oldExternalErrors: null | {[path: string]: $ReadOnlyArray<string>},
+  oldExternalErrors: ExternalErrors,
 };
 export default class Form<T, ExtraSubmitData> extends React.Component<
   Props<T, ExtraSubmitData>,
