@@ -433,6 +433,16 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
       }
     });
     this.props.onChange(newState[0]);
+
+    // Don't call onValidation if there's still a pending validation, because it
+    // would be too early: isValid(...) is erroneously true at this time,
+    // because:
+    //   (a) there are no validations functions
+    //   (b) the formState was just created anew
+    //
+    // Instead, onValidation will be called by the consumer of
+    // pendingValidationPath (which is a few lines above, via
+    // recomputeErrorsAtPathAndRender).
     if (this.pendingValidationPath === null) {
       this.props.onValidation(isValid(newState));
     }
@@ -576,9 +586,22 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
               path,
               this.validations
             );
+
+            // The following invariant could be violated if multiple
+            // customChanges are triggered in sequence without a render
+            // happening. Unlikely since validation happens in response to user
+            // input, but definitely not impossible since setState is async.
+
+            // pendingValidationPath could be a queue, or perhaps we only care
+            // about the most recent value, but right now it's unclear what
+            // should happen because the formState and validation map has
+            // potentially transitioned through multiple unvalidited shapes. If
+            // there's a real use case we'll think through how to support it,
+            // but right now we don't have a use case, so for now we'll attempt
+            // to maintain this invariant.
             invariant(
               this.pendingValidationPath === null,
-              "Unexpected pending validation. This is a bug in Formula One, please report it."
+              "Unexpected pending validation. Consecutive customChanges are not supported. If you think you have a valid use case, please contact us!"
             );
             this.pendingValidationPath = path;
             return changedFormState(value);
