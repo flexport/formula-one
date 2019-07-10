@@ -371,7 +371,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
 
   validations: ValidationMap;
   initialValidationComplete = false;
-  pathForPostCommitValidation: null | Path = null;
+  pendingValidationPath: null | Path = null;
 
   constructor(props: Props<T, ExtraSubmitData>) {
     super(props);
@@ -427,9 +427,9 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     newState: FormState<T>
   ) => {
     this.setState({formState: newState, pristine: false}, () => {
-      if (this.pathForPostCommitValidation !== null) {
-        this.recomputeErrorsAtPathAndRender(this.pathForPostCommitValidation);
-        this.pathForPostCommitValidation = null;
+      if (this.pendingValidationPath !== null) {
+        this.recomputeErrorsAtPathAndRender(this.pendingValidationPath);
+        this.pendingValidationPath = null;
       }
     });
     this.props.onChange(newState[0]);
@@ -438,7 +438,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     //   correspond directly to the internal onValidation. Internally
     //   onValidation means (on initial validation). Externally, it means
     //   on any validation.
-    if (this.pathForPostCommitValidation === null) {
+    if (this.pendingValidationPath === null) {
       this.props.onValidation(isValid(newState));
     }
   };
@@ -582,10 +582,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
               this.validations
             );
             invariant(
-              this.pathForPostCommitValidation === null,
+              this.pendingValidationPath === null,
               "Unexpected pending validation. This is a bug in Formula One, please report it."
             );
-            this.pathForPostCommitValidation = path;
+            this.pendingValidationPath = path;
             return changedFormState(value);
           },
           applyChangeToNode: (path, formState) =>
