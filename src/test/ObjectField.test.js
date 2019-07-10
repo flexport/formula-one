@@ -543,34 +543,23 @@ describe("ObjectField", () => {
     });
 
     it("doesn't crash when object changes shape", () => {
-      type Union = {|tag: "a", a: string|} | {|tag: "b", b: string|};
-      const initialValue: Union = {tag: "a", a: "a"};
+      type Union = {|a: string|} | {|b: string|};
+      const initialValue: Union = {a: "a"};
 
-      function customChange(
-        prevValue: Union,
-        nextValue: {tag: "a"} | {tag: "b"}
-      ): null | Union {
-        if (prevValue.tag !== "a" && nextValue.tag === "a") {
-          return {tag: "a", a: ""};
-        } else if (prevValue.tag !== "b" && nextValue.tag === "b") {
-          return {tag: "b", b: ""};
-        }
-        return null;
+      function customChange(): null | Union {
+        return {b: ""};
       }
 
       function App() {
         return (
           <Form initialValue={initialValue}>
-            {(link, _onSubmit, {value}) => (
+            {link => (
               <ObjectField link={link} customChange={customChange}>
                 {link => (
                   <>
-                    <TestField link={link.tag} />
-                    {value.tag === "a" ? (
-                      // $FlowFixMe(dmnd)
+                    {link.a ? (
                       <TestField link={link.a} />
                     ) : (
-                      // $FlowFixMe(dmnd)
                       <TestField link={link.b} />
                     )}
                   </>
