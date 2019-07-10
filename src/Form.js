@@ -433,11 +433,6 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
       }
     });
     this.props.onChange(newState[0]);
-    // TODO(zach): This is a bit gross, but the general purpose here is
-    //   that onValidation outside the form (in the public API) doesn't
-    //   correspond directly to the internal onValidation. Internally
-    //   onValidation means (on initial validation). Externally, it means
-    //   on any validation.
     if (this.pendingValidationPath === null) {
       this.props.onValidation(isValid(newState));
     }
