@@ -662,5 +662,33 @@ describe("ArrayField", () => {
       // self-referential and thus not printable
       expect(Object.is(testInstance, nextTestInstance)).toBe(true);
     });
+
+    describe("length", () => {
+      function expectLengthChangeToNotThrow(from, to) {
+        const renderer = TestRenderer.create(
+          <Form initialValue={from}>
+            {link => (
+              <ArrayField link={link} customChange={() => to}>
+                {links =>
+                  links.map((link, i) => <TestField link={link} key={i} />)
+                }
+              </ArrayField>
+            )}
+          </Form>
+        );
+        const inner = renderer.root.findAllByType(TestInput)[0];
+        expect(() => {
+          inner.instance.change("z");
+        }).not.toThrow();
+      }
+
+      it("length can increase", () => {
+        expectLengthChangeToNotThrow(["a"], ["a", "b", "c"]);
+      });
+
+      it("length can decrease", () => {
+        expectLengthChangeToNotThrow(["a", "b", "c"], ["a"]);
+      });
+    });
   });
 });

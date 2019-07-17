@@ -542,38 +542,27 @@ describe("ObjectField", () => {
       ]);
     });
 
-    it("doesn't crash when object changes shape", () => {
-      type Union = {|a: string|} | {|b: string|};
-      const initialValue: Union = {a: "a"};
-
-      function customChange(): null | Union {
-        return {b: ""};
-      }
-
-      function App() {
-        return (
-          <Form initialValue={initialValue}>
-            {link => (
-              <ObjectField link={link} customChange={customChange}>
-                {link => (
-                  <>
-                    {link.a ? (
-                      <TestField link={link.a} />
-                    ) : (
-                      <TestField link={link.b} />
-                    )}
-                  </>
-                )}
-              </ObjectField>
-            )}
-          </Form>
-        );
-      }
-
-      const renderer = TestRenderer.create(<App />);
+    it("can change shape", () => {
+      const renderer = TestRenderer.create(
+        <Form initialValue={{a: "a"}}>
+          {link => (
+            <ObjectField link={link} customChange={() => ({b: "b"})}>
+              {link => (
+                <>
+                  {link.a ? (
+                    <TestField link={link.a} />
+                  ) : (
+                    <TestField link={link.b} />
+                  )}
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
       const inner = renderer.root.findAllByType(TestInput)[0];
       expect(() => {
-        inner.instance.change("b");
+        inner.instance.change("z");
       }).not.toThrow();
     });
   });
