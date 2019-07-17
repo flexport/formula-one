@@ -10,6 +10,7 @@ import {
   validationFnNoOps,
 } from "./Form";
 import {setExtrasTouched, getExtras, isValid} from "./formState";
+import alwaysValid from "./alwaysValid";
 
 type Props<T> = {|
   +link: FieldLink<T>,
@@ -36,7 +37,7 @@ function getErrors(errors: Err) {
 
 export default class Field<T> extends React.Component<Props<T>> {
   static defaultProps = {
-    validation: () => [],
+    validation: alwaysValid,
   };
   static contextType = FormContext;
   context: FormContextPayload<T>;
@@ -50,10 +51,8 @@ export default class Field<T> extends React.Component<Props<T>> {
     );
   }
 
-  componentDidUpdate(prevProps: Props<T>) {
-    if (prevProps.validation !== this.props.validation) {
-      this.validationFnOps.replace(this.props.validation);
-    }
+  componentDidUpdate() {
+    this.validationFnOps.replace(this.props.validation);
   }
 
   componentWillUnmount() {
