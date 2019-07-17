@@ -243,7 +243,7 @@ function validateTree<T>(
  * Note this does not remove validation functions at prefix itself. Only child
  * paths are removed.
  */
-function removeChildValidationsAtPath(
+function removeDescendantValidations(
   prefix: Path,
   validations: ValidationMap
 ): ValidationMap {
@@ -582,7 +582,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
           shouldShowError: this.props.feedbackStrategy.bind(null, metaForm),
           registerValidation: this.handleRegisterValidation,
           applyCustomChangeToTree: (path, [value, _tree]) => {
-            this.validations = removeChildValidationsAtPath(
+            this.validations = removeDescendantValidations(
               path,
               this.validations
             );
