@@ -121,7 +121,7 @@ export interface FieldProps<T> {
     additionalInfo: AdditionalRenderInfo<T>
   ) => React.ReactNode;
 }
-declare class Field<T> extends React.Component<T> {}
+declare class Field<T> extends React.Component<FieldProps<T>> {}
 
 export type ClientErrors = ReadonlyArray<string> | "pending";
 export type ExtErrors = ReadonlyArray<string> | "unchecked";
