@@ -542,6 +542,84 @@ describe("ObjectField", () => {
       ]);
     });
 
+    it("works fine with nested custom changes", () => {
+      const outerCustomChange = jest.fn(() => ({
+        uncle: "Sam",
+        nested: {
+          string: "An even newer value",
+          number: 1337,
+        },
+      }));
+      const innerCustomChange = jest.fn(() => ({
+        string: "A whole new value",
+        number: 0,
+      }));
+      const objectRenderFn = jest.fn(() => null);
+      const outerLinkTapFn = jest.fn(() => null);
+      const innerLinkTapFn = jest.fn(() => null);
+
+      TestRenderer.create(
+        <Form
+          initialValue={{
+            uncle: "Bob",
+            nested: {
+              string: "hello",
+              number: 42,
+            },
+          }}
+        >
+          {link => (
+            <>
+              <LinkTap link={link}>{outerLinkTapFn}</LinkTap>
+              <ObjectField link={link} customChange={outerCustomChange}>
+                {link => (
+                  <>
+                    <TestField link={link.uncle} />
+                    <LinkTap link={link.nested}>{innerLinkTapFn}</LinkTap>
+                    <ObjectField
+                      link={link.nested}
+                      validation={jest.fn(() => ["This is an error"])}
+                      customChange={innerCustomChange}
+                    >
+                      {objectRenderFn}
+                    </ObjectField>
+                  </>
+                )}
+              </ObjectField>
+            </>
+          )}
+        </Form>
+      );
+
+      innerLinkTapFn.mockClear();
+      outerLinkTapFn.mockClear();
+
+      // call the child onChange to trigger a customChange
+      const objectLinks = objectRenderFn.mock.calls[0][0];
+      objectLinks.string.onChange(mockFormState("newString"));
+
+      expect(innerLinkTapFn).toHaveBeenCalledTimes(2);
+      expect(innerLinkTapFn.mock.calls[0][0].formState).toEqual([
+        {
+          string: "An even newer value",
+          number: 1337,
+        },
+        expect.anything(),
+      ]);
+
+      expect(outerLinkTapFn).toHaveBeenCalledTimes(2);
+      expect(outerLinkTapFn.mock.calls[0][0].formState).toEqual([
+        {
+          uncle: "Sam",
+          nested: {
+            string: "An even newer value",
+            number: 1337,
+          },
+        },
+        expect.anything(),
+      ]);
+    });
+
     it("can change shape", () => {
       const renderer = TestRenderer.create(
         <Form initialValue={{a: "a"}}>
