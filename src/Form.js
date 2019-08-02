@@ -198,7 +198,7 @@ function validateTree<T>(
     ...validations.entries(),
   ];
   const newErrors: Array<[Path, Array<string>]> = entries
-    .filter(([path]) => startsWith(path, prefix))
+    .filter(([path]) => startsWith(path, encodePath(prefix)))
     .map(([path, validationsMap]) => {
       // Note that value is not the root value, it's the value at this path.
       // So convert absolute validation paths to relative before attempting to
@@ -249,7 +249,7 @@ function removeDescendantValidations(
 ): ValidationMap {
   const newValidations = new Map(validations);
   const paths = [...newValidations.keys()].filter(
-    path => startsWith(path, prefix) && path !== encodePath(prefix)
+    path => startsWith(path, encodePath(prefix)) && path !== encodePath(prefix)
   );
 
   for (const path of paths) {
