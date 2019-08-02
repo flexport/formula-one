@@ -1,8 +1,8 @@
 # formula-one
 
-<a href="https://circleci.com/gh/flexport/formula-one"><img align="right" src="https://circleci.com/gh/flexport/formula-one.svg?style=svg"></a>
-
 **formula-one** is a library which makes it easier to write type-safe forms with validations and complex inputs.
+
+[![CircleCI](https://circleci.com/gh/flexport/formula-one.svg?style=svg)](https://circleci.com/gh/flexport/formula-one)
 
 ## A minimal example, with no validation
 
