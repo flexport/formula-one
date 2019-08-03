@@ -12,8 +12,8 @@ import {type Path} from "./tree";
 opaque type EncodedPath = string;
 export type {EncodedPath};
 
-export function startsWith(path: EncodedPath, prefix: Path) {
-  return path.startsWith(encodePath(prefix));
+export function startsWith(path: EncodedPath, prefix: EncodedPath) {
+  return path.startsWith(prefix);
 }
 
 export function encodePath(path: Path): EncodedPath {

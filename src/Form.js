@@ -198,7 +198,7 @@ function validateTree<T>(
     ...validations.entries(),
   ];
   const newErrors: Array<[Path, Array<string>]> = entries
-    .filter(([path]) => startsWith(path, prefix))
+    .filter(([path]) => startsWith(path, encodePath(prefix)))
     .map(([path, validationsMap]) => {
       // Note that value is not the root value, it's the value at this path.
       // So convert absolute validation paths to relative before attempting to
@@ -249,7 +249,7 @@ function removeDescendantValidations(
 ): ValidationMap {
   const newValidations = new Map(validations);
   const paths = [...newValidations.keys()].filter(
-    path => startsWith(path, prefix) && path !== encodePath(prefix)
+    path => startsWith(path, encodePath(prefix)) && path !== encodePath(prefix)
   );
 
   for (const path of paths) {
@@ -587,24 +587,39 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
               this.validations
             );
 
-            // The following invariant could be violated if multiple
-            // customChanges are triggered in sequence without a render
-            // happening. Unlikely since validation happens in response to user
-            // input, but definitely not impossible since setState is async.
+            const {pendingValidationPath} = this;
+            if (pendingValidationPath == null) {
+              this.pendingValidationPath = path;
+              return changedFormState(value);
+            }
 
-            // pendingValidationPath could be a queue, or perhaps we only care
-            // about the most recent value, but right now it's unclear what
-            // should happen because the formState and validation map has
-            // potentially transitioned through multiple unvalidited shapes. If
-            // there's a real use case we'll think through how to support it,
-            // but right now we don't have a use case, so for now we'll attempt
-            // to maintain this invariant.
+            // If we haven't returned, there is an existing path waiting for
+            // validation. There could have been nested custom changes, in which
+            // case it's safe to discard the child path, because validating the
+            // parent path will take care of the child path too.
+            const encodedPath = encodePath(path);
+            const encodedPendingPath = encodePath(pendingValidationPath);
+
+            if (startsWith(encodedPath, encodedPendingPath)) {
+              this.pendingValidationPath = pendingValidationPath; // noop
+              return changedFormState(value);
+            } else if (startsWith(encodedPendingPath, encodedPath)) {
+              this.pendingValidationPath = path;
+              return changedFormState(value);
+            }
+
+            // If we still haven't returned, the pending validation path is a
+            // sibling of the new path. We haven't though through what to do in
+            // this case, so just error for now.
+
+            // TODO(dmnd): pendingValidationPath could be a queue, or perhaps we
+            // only care about the most recent value, but right now it's unclear
+            // what should happen because the formState and validation map has
+            // potentially transitioned through multiple unvalidated shapes.
             invariant(
-              this.pendingValidationPath === null,
+              false,
               "Unexpected pending validation. Consecutive customChanges are not supported. If you think you have a valid use case, please contact us!"
             );
-            this.pendingValidationPath = path;
-            return changedFormState(value);
           },
           applyChangeToNode: (path, formState) =>
             applyChangeToNode(path, formState, this.validations),
