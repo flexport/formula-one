@@ -190,11 +190,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    if (customValue) {
-      this._validateThenApplyChange([customValue, newTree]);
-    } else {
-      this._validateThenApplyChange([newValue, newTree]);
-    }
+    this._validateThenApplyChange([customValue || newValue, newTree]);
   };
 
   _addChildFields: (
@@ -220,11 +216,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    if (customValue) {
-      this._validateThenApplyChange([customValue, newTree]);
-    } else {
-      this._validateThenApplyChange([newValue, newTree]);
-    }
+    this._validateThenApplyChange([customValue || newValue, newTree]);
   };
 
   _filterChildFields: (
@@ -288,12 +280,14 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     const [oldValue, oldTree] = this.props.link.formState;
 
     const newValue = removeAt(index, oldValue);
+    const customValue =
+      this.props.customChange && this.props.customChange(oldValue, newValue);
     const newTree = dangerouslySetChildren(
       removeAt(index, shapedArrayChildren(oldTree)),
       oldTree
     );
 
-    this._validateThenApplyChange([newValue, newTree]);
+    this._validateThenApplyChange([customValue || newValue, newTree]);
   };
 
   _moveChildField = (from: number, to: number) => {
