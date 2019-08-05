@@ -405,6 +405,40 @@ describe("ArrayField", () => {
           "five",
         ]);
       });
+      it("triggers customChange", () => {
+        const renderFn = jest.fn(() => null);
+        const customChange = jest.fn(() => null);
+
+        TestRenderer.create(
+          <Form initialValue={["one", "two", "three"]}>
+            {link => (
+              <ArrayField customChange={customChange} link={link}>
+                {renderFn}
+              </ArrayField>
+            )}
+          </Form>
+        );
+
+        expect(customChange).toHaveBeenCalledTimes(0);
+
+        const [_, {addFields}] = renderFn.mock.calls[0];
+        addFields([[0, ["negative one", "zero"]], [3, ["four", "five"]]]);
+
+        expect(customChange).toHaveBeenCalledTimes(1);
+        expect(customChange).toHaveBeenLastCalledWith([
+          "one",
+          "two",
+          "three",
+        ], [
+          "negative one",
+          "zero",
+          "one",
+          "two",
+          "three",
+          "four",
+          "five",
+        ]);
+      })
     });
 
     describe("filterFields", () => {
