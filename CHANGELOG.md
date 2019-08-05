@@ -43,6 +43,7 @@
 
 #### Minor changes
 
+- Add TypeScript types.
 - Fix flow types for `ErrorsHelper`.
 
 ### v0.8.2
