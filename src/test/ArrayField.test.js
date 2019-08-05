@@ -347,6 +347,42 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenCalledTimes(2);
         expect(validation).toHaveBeenLastCalledWith(["one", "three"]);
       });
+      it("triggers customChange after entry is removed", () => {
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField key={i} link={link} />
+          ))
+        );
+        const customChange = jest.fn((a, b) => {
+          console.log("prev:", a);
+          console.log("next:", b);
+          return null
+        });
+        TestRenderer.create(
+          <Form initialValue={["one", "two", "three"]}>
+            {link => (
+              <ArrayField customChange={customChange} link={link}>
+                {renderFn}
+              </ArrayField>
+            )}
+          </Form>
+        );
+
+        expect(customChange).toHaveBeenCalledTimes(0);
+
+        const [_, {removeField}] = renderFn.mock.calls[0];
+        removeField(1);
+
+        expect(customChange).toHaveBeenCalledTimes(1);
+        expect(customChange).toHaveBeenLastCalledWith([
+          "one",
+          "two",
+          "three",
+        ], [
+          "one",
+          "three",
+        ]);
+      });
     });
 
     describe("moveField", () => {
