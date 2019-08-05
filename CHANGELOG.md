@@ -1,6 +1,6 @@
 # Changelog
 
-### v0.9.0
+### v0.9.1
 
 #### Breaking changes
 
@@ -45,6 +45,11 @@
 
 - Add TypeScript types.
 - Fix flow types for `ErrorsHelper`.
+
+### v0.9.0
+
+- Fumbled release. Has everything from 0.9.1 but also a bad peer dependency.
+  Use 0.9.1 instead.
 
 ### v0.8.2
 
