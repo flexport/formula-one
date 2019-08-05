@@ -6,6 +6,7 @@
 
 - Rename `serverErrors` to `externalErrors`. Validation errors from outside Formula One aren't necessarily from a server. This prop is also no longer a required parameter to `Form`, so only set it if you need it.
 - Bump internal flow version to 0.95.1.
+- The React peer dependency was advanced to 16.8.0, since formula-one now uses hooks in its components. This also gets us ready for a hooks-based API!
 
 #### New features
 

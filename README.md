@@ -413,6 +413,17 @@ could be used in this form:
           </>
         )}
       </ObjectField>
+      <ErrorsHelper link={link}>
+        {({shouldShowErrors, flattened}) =>
+          shouldShowErrors ? (
+            <ul className="form-level-error">
+              {flattened.map(errorMessage => (
+                <li key={errorMessage}>{errorMessage}</li>
+              ))}
+            </ul>
+          ) : null
+        }
+      </ErrorsHelper>
       <button onClick={handleSubmit}>Submit</button>
     </>
   )}
