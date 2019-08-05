@@ -179,6 +179,8 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     };
 
     const newValue = insertAt(index, childValue, oldValue);
+    const customValue =
+      this.props.customChange && this.props.customChange(oldValue, newValue);
     const newTree = dangerouslySetChildren(
       insertAt(
         index,
@@ -188,7 +190,11 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    this._validateThenApplyChange([newValue, newTree]);
+    if (customValue) {
+      this._validateThenApplyChange([customValue, newTree]);
+    } else {
+      this._validateThenApplyChange([newValue, newTree]);
+    }
   };
 
   _addChildFields: (
