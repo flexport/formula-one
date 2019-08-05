@@ -17,7 +17,7 @@
     "test": "jest"
   },
   "peerDependencies": {
-    "react": "^16.3.0"
+    "react": "^16.8.0"
   },
   "devDependencies": {
     "@babel/cli": "^7.0.0",
