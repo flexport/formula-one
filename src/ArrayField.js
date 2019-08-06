@@ -298,12 +298,14 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     const [oldValue, oldTree] = this.props.link.formState;
 
     const newValue = moveFromTo(from, to, oldValue);
+    const customValue =
+      this.props.customChange && this.props.customChange(oldValue, newValue);
     const newTree = dangerouslySetChildren(
       moveFromTo(from, to, shapedArrayChildren(oldTree)),
       oldTree
     );
 
-    this._validateThenApplyChange([newValue, newTree]);
+    this._validateThenApplyChange([customValue || newValue, newTree]);
   };
 
   render() {
