@@ -549,6 +549,37 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenCalledTimes(2);
         expect(validation).toHaveBeenLastCalledWith(["one", "two"]);
       });
+
+      it("triggers customChange after fields are filtered", () => {
+        const renderFn = jest.fn(() => null);
+        const customChange = jest.fn(() => null);
+
+        TestRenderer.create(
+          <Form initialValue={["one", "two", "three"]}>
+            {link => (
+              <ArrayField customChange={customChange} link={link}>
+                {renderFn}
+              </ArrayField>
+            )}
+          </Form>
+        );
+
+        expect(customChange).toHaveBeenCalledTimes(0);
+
+        const [_, {filterFields}] = renderFn.mock.calls[0];
+        // remove numbers without "o" and the fourth element
+        filterFields((v, i) => v.indexOf("o") !== -1 && i !== 3);
+
+        expect(customChange).toHaveBeenCalledTimes(1);
+        expect(customChange).toHaveBeenLastCalledWith([
+          "one",
+          "two",
+          "three",
+        ], [
+          "one",
+          "two",
+        ]);
+      });
     });
 
     describe("modifyFields", () => {
