@@ -231,8 +231,10 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       )
     );
     const newTree = dangerouslySetChildren(newChildren, oldTree);
+    const customValue =
+      this.props.customChange && this.props.customChange(oldValue, newValue);
 
-    this._validateThenApplyChange([newValue, newTree]);
+    this._validateThenApplyChange([customValue || newValue, newTree]);
   };
 
   _modifyChildFields: ({
