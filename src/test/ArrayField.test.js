@@ -351,11 +351,7 @@ describe("ArrayField", () => {
             <TestField key={i} link={link} />
           ))
         );
-        const customChange = jest.fn((a, b) => {
-          console.log("prev:", a);
-          console.log("next:", b);
-          return null
-        });
+        const customChange = jest.fn(() => null);
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
             {link => (
@@ -422,6 +418,36 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenCalledTimes(2);
         expect(validation).toHaveBeenLastCalledWith(["one", "three", "two"]);
       });
+      it("triggers customChange after the entry is moved", () => {
+        const renderFn = jest.fn(() => null);
+        const customChange = jest.fn(() => null);
+
+        TestRenderer.create(
+          <Form initialValue={["one", "two", "three"]}>
+            {link => (
+              <ArrayField customChange={customChange} link={link}>
+                {renderFn}
+              </ArrayField>
+            )}
+          </Form>
+        );
+
+        expect(customChange).toHaveBeenCalledTimes(0);
+
+        const [_, {moveField}] = renderFn.mock.calls[0];
+        moveField(2, 1);
+
+        expect(customChange).toHaveBeenCalledTimes(1);
+        expect(customChange).toHaveBeenLastCalledWith([
+          "one",
+          "two",
+          "three",
+        ], [
+          "one",
+          "three",
+          "two",
+        ]);
+      })
     });
 
     describe("addFields", () => {
