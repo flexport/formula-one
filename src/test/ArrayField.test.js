@@ -628,6 +628,41 @@ describe("ArrayField", () => {
           "three",
         ]);
       });
+      it("triggers customChange after fields are modified", () => {
+        const renderFn = jest.fn(() => null);
+        const customChange = jest.fn(() => null);
+
+        TestRenderer.create(
+          <Form initialValue={["one", "two", "three"]}>
+            {link => (
+              <ArrayField customChange={customChange} link={link}>
+                {renderFn}
+              </ArrayField>
+            )}
+          </Form>
+        );
+
+        expect(customChange).toHaveBeenCalledTimes(0);
+
+        const [_, {modifyFields}] = renderFn.mock.calls[0];
+        modifyFields({
+          insertSpans: [[0, ["start"]], [2, ["middle", "content"]]],
+          filterPredicate: v => v !== "one",
+        });
+
+        expect(customChange).toHaveBeenCalledTimes(1);
+        expect(customChange).toHaveBeenLastCalledWith([
+          "one",
+          "two",
+          "three",
+        ], [
+          "start",
+          "two",
+          "middle",
+          "content",
+          "three",
+        ]);
+      });
     });
   });
 
