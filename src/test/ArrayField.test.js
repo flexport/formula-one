@@ -270,8 +270,20 @@ describe("ArrayField", () => {
       });
 
       it("triggers customChange", () => {
-        const renderFn = jest.fn(() => null);
-        const customChange = jest.fn(() => null);
+        const renderFn = jest.fn(links => links.map((link, i) => (
+          <TestField link={link} key={i} validation={validation} />
+        )));
+
+        const customChange = jest.fn((prevValue, nextValue) => {
+          return new Array(nextValue.length).fill("hello");
+        });
+
+        const validation = jest.fn((value) => {
+          if (value.trim() === "hello") {
+            return ["Cannot be \"hello\""];
+          }
+          return [];
+        });
 
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
@@ -284,9 +296,18 @@ describe("ArrayField", () => {
         );
 
         expect(customChange).toHaveBeenCalledTimes(0);
+        expect(validation).toHaveBeenCalledTimes(3);
 
+        validation.mockClear();
         const [_, {addField}] = renderFn.mock.calls[0];
         addField(0, "zero");
+
+        // Validation will be called 7 times:
+        // * once in response to add field
+        // * 3 times more from the arrayEquals test in replaceValidation
+        // * 3 times more from recomputeErrorsAtPathAndRender
+        expect(validation).toHaveBeenCalledTimes(1 + 3 + 3);
+        expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
         expect(customChange).toHaveBeenLastCalledWith([
@@ -346,12 +367,21 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith(["one", "three"]);
       });
       it("triggers customChange after entry is removed", () => {
-        const renderFn = jest.fn(links =>
-          links.map((link, i) => (
-            <TestField key={i} link={link} />
-          ))
-        );
-        const customChange = jest.fn(() => null);
+        const renderFn = jest.fn(links => links.map((link, i) => (
+          <TestField link={link} key={i} validation={validation} />
+        )));
+
+        const customChange = jest.fn((prevValue, nextValue) => {
+          return new Array(nextValue.length).fill("hello");
+        });
+
+        const validation = jest.fn((value) => {
+          if (value.trim() === "hello") {
+            return ["Cannot be \"hello\""];
+          }
+          return [];
+        });
+
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
             {link => (
@@ -363,9 +393,17 @@ describe("ArrayField", () => {
         );
 
         expect(customChange).toHaveBeenCalledTimes(0);
+        expect(validation).toHaveBeenCalledTimes(3);
 
+        validation.mockClear();
         const [_, {removeField}] = renderFn.mock.calls[0];
         removeField(1);
+
+        // Validation will be called 4 times:
+        // * twice from the arrayEquals test in replaceValidation
+        // * twice more from recomputeErrorsAtPathAndRender
+        expect(validation).toHaveBeenCalledTimes(2 + 2);
+        expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
         expect(customChange).toHaveBeenLastCalledWith([
@@ -419,8 +457,20 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith(["one", "three", "two"]);
       });
       it("triggers customChange after the entry is moved", () => {
-        const renderFn = jest.fn(() => null);
-        const customChange = jest.fn(() => null);
+        const renderFn = jest.fn(links => links.map((link, i) => (
+          <TestField link={link} key={i} validation={validation} />
+        )));
+
+        const customChange = jest.fn((prevValue, nextValue) => {
+          return new Array(nextValue.length).fill("hello");
+        });
+
+        const validation = jest.fn((value) => {
+          if (value.trim() === "hello") {
+            return ["Cannot be \"hello\""];
+          }
+          return [];
+        });
 
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
@@ -433,9 +483,17 @@ describe("ArrayField", () => {
         );
 
         expect(customChange).toHaveBeenCalledTimes(0);
+        expect(validation).toHaveBeenCalledTimes(3);
 
+        validation.mockClear();
         const [_, {moveField}] = renderFn.mock.calls[0];
         moveField(2, 1);
+
+        // Validation will be called 6 times:
+        // * 3 times from the arrayEquals test in replaceValidation
+        // * 3 times more from recomputeErrorsAtPathAndRender
+        expect(validation).toHaveBeenCalledTimes(3 + 3);
+        expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
         expect(customChange).toHaveBeenLastCalledWith([
@@ -498,8 +556,20 @@ describe("ArrayField", () => {
         ]);
       });
       it("triggers customChange", () => {
-        const renderFn = jest.fn(() => null);
-        const customChange = jest.fn(() => null);
+        const renderFn = jest.fn(links => links.map((link, i) => (
+          <TestField link={link} key={i} validation={validation} />
+        )));
+
+        const customChange = jest.fn((prevValue, nextValue) => {
+          return new Array(nextValue.length).fill("hello");
+        });
+
+        const validation = jest.fn((value) => {
+          if (value.trim() === "hello") {
+            return ["Cannot be \"hello\""];
+          }
+          return [];
+        });
 
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
@@ -512,9 +582,18 @@ describe("ArrayField", () => {
         );
 
         expect(customChange).toHaveBeenCalledTimes(0);
+        expect(validation).toHaveBeenCalledTimes(3);
 
+        validation.mockClear();
         const [_, {addFields}] = renderFn.mock.calls[0];
         addFields([[0, ["negative one", "zero"]], [3, ["four", "five"]]]);
+
+        // Validation will be called 10 times:
+        // * 4 times in response to add fields
+        // * 3 times more from the arrayEquals test in replaceValidation
+        // * 3 times more from recomputeErrorsAtPathAndRender
+        expect(validation).toHaveBeenCalledTimes(4 + 3 + 3);
+        expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
         expect(customChange).toHaveBeenLastCalledWith([
@@ -575,8 +654,20 @@ describe("ArrayField", () => {
       });
 
       it("triggers customChange after fields are filtered", () => {
-        const renderFn = jest.fn(() => null);
-        const customChange = jest.fn(() => null);
+        const renderFn = jest.fn(links => links.map((link, i) => (
+          <TestField link={link} key={i} validation={validation} />
+        )));
+
+        const customChange = jest.fn((prevValue, nextValue) => {
+          return new Array(nextValue.length).fill("hello");
+        });
+
+        const validation = jest.fn((value) => {
+          if (value.trim() === "hello") {
+            return ["Cannot be \"hello\""];
+          }
+          return [];
+        });
 
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
@@ -589,10 +680,18 @@ describe("ArrayField", () => {
         );
 
         expect(customChange).toHaveBeenCalledTimes(0);
+        expect(validation).toHaveBeenCalledTimes(3);
 
+        validation.mockClear();
         const [_, {filterFields}] = renderFn.mock.calls[0];
         // remove numbers without "o" and the fourth element
         filterFields((v, i) => v.indexOf("o") !== -1 && i !== 3);
+
+        // Validation will be called 4 times:
+        // * twice from the arrayEquals test in replaceValidation
+        // * twice more from recomputeErrorsAtPathAndRender
+        expect(validation).toHaveBeenCalledTimes(2 + 2);
+        expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
         expect(customChange).toHaveBeenLastCalledWith([
@@ -655,8 +754,20 @@ describe("ArrayField", () => {
         ]);
       });
       it("triggers customChange after fields are modified", () => {
-        const renderFn = jest.fn(() => null);
-        const customChange = jest.fn(() => null);
+        const renderFn = jest.fn(links => links.map((link, i) => (
+          <TestField link={link} key={i} validation={validation} />
+        )));
+
+        const customChange = jest.fn((prevValue, nextValue) => {
+          return new Array(nextValue.length).fill("hello");
+        });
+
+        const validation = jest.fn((value) => {
+          if (value.trim() === "hello") {
+            return ["Cannot be \"hello\""];
+          }
+          return [];
+        });
 
         TestRenderer.create(
           <Form initialValue={["one", "two", "three"]}>
@@ -669,12 +780,21 @@ describe("ArrayField", () => {
         );
 
         expect(customChange).toHaveBeenCalledTimes(0);
+        expect(validation).toHaveBeenCalledTimes(3);
 
+        validation.mockClear();
         const [_, {modifyFields}] = renderFn.mock.calls[0];
         modifyFields({
           insertSpans: [[0, ["start"]], [2, ["middle", "content"]]],
           filterPredicate: v => v !== "one",
         });
+
+        // Validation will be called 8 times:
+        // * twice in response to modify fields
+        // * 3 times more from the arrayEquals test in replaceValidation
+        // * 3 times more from recomputeErrorsAtPathAndRender
+        expect(validation).toHaveBeenCalledTimes(2 + 3 + 3);
+        expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
         expect(customChange).toHaveBeenLastCalledWith([

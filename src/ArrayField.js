@@ -163,6 +163,14 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
   };
 
+  _validateThenApplyCustomChange(customChangedFormState: FormState<Array<E>>) {
+    const validatedFormState = this.context.applyCustomChangeToTree(
+      this.props.link.path,
+      customChangedFormState
+    );
+    this.props.link.onChange(validatedFormState);
+  }
+
   _validateThenApplyChange(formState: FormState<Array<E>>) {
     const validatedFormState = this.context.applyChangeToNode(
       this.props.link.path,
@@ -190,7 +198,11 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    this._validateThenApplyChange([customValue || newValue, newTree]);
+    if (customValue) {
+      this._validateThenApplyCustomChange([customValue, newTree]);
+    } else {
+      this._validateThenApplyChange([newValue, newTree]);
+    }
   };
 
   _addChildFields: (
@@ -216,7 +228,11 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    this._validateThenApplyChange([customValue || newValue, newTree]);
+    if (customValue) {
+      this._validateThenApplyCustomChange([customValue, newTree]);
+    } else {
+      this._validateThenApplyChange([newValue, newTree]);
+    }
   };
 
   _filterChildFields: (
@@ -234,7 +250,11 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
-    this._validateThenApplyChange([customValue || newValue, newTree]);
+    if (customValue) {
+      this._validateThenApplyCustomChange([customValue, newTree]);
+    } else {
+      this._validateThenApplyChange([newValue, newTree]);
+    }
   };
 
   _modifyChildFields: ({
@@ -277,7 +297,11 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
-    this._validateThenApplyChange([customValue || newValue, newTree]);
+    if (customValue) {
+      this._validateThenApplyCustomChange([customValue, newTree]);
+    } else {
+      this._validateThenApplyChange([newValue, newTree]);
+    }
   };
 
   _removeChildField = (index: number) => {
@@ -291,7 +315,11 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    this._validateThenApplyChange([customValue || newValue, newTree]);
+    if (customValue) {
+      this._validateThenApplyCustomChange([customValue, newTree]);
+    } else {
+      this._validateThenApplyChange([newValue, newTree]);
+    }
   };
 
   _moveChildField = (from: number, to: number) => {
@@ -305,7 +333,11 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    this._validateThenApplyChange([customValue || newValue, newTree]);
+    if (customValue) {
+      this._validateThenApplyCustomChange([customValue, newTree]);
+    } else {
+      this._validateThenApplyChange([newValue, newTree]);
+    }
   };
 
   render() {
