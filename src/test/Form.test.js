@@ -477,7 +477,7 @@ describe("Form", () => {
           {link => (
             <ObjectField link={link} validation={() => ["Toplevel error"]}>
               {link => (
-                <React.Fragment>
+                <>
                   <TestField
                     link={link.errors}
                     validation={() => ["Two", "errors"]}
@@ -501,7 +501,7 @@ describe("Form", () => {
                       ))
                     }
                   </ArrayField>
-                </React.Fragment>
+                </>
               )}
             </ObjectField>
           )}
@@ -542,7 +542,7 @@ describe("Form", () => {
           {link => (
             <ObjectField link={link} validation={() => ["Toplevel error"]}>
               {link => (
-                <React.Fragment>
+                <>
                   <NaughtyRenderingField
                     link={link.naughty}
                     validation={() => ["Naughty", "errors"]}
@@ -551,7 +551,7 @@ describe("Form", () => {
                     link={link.nice}
                     validation={() => ["Nice", "errors"]}
                   />
-                </React.Fragment>
+                </>
               )}
             </ObjectField>
           )}

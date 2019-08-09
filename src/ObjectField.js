@@ -157,7 +157,7 @@ export default class ObjectField<T: {}> extends React.Component<
       this._handleChildBlur
     );
     return (
-      <React.Fragment>
+      <>
         {this.props.children(links, {
           touched: getExtras(formState).meta.touched,
           changed: getExtras(formState).meta.changed,
@@ -167,7 +167,7 @@ export default class ObjectField<T: {}> extends React.Component<
           valid: isValid(formState),
           value: formState[0],
         })}
-      </React.Fragment>
+      </>
     );
   }
 }

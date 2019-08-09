@@ -600,7 +600,7 @@ describe("ArrayField", () => {
               validation={parentValidation}
             >
               {links => (
-                <React.Fragment>
+                <>
                   {links.map((link, i) => (
                     <TestField
                       key={i}
@@ -608,7 +608,7 @@ describe("ArrayField", () => {
                       validation={childValidation}
                     />
                   ))}
-                </React.Fragment>
+                </>
               )}
             </ArrayField>
           )}

@@ -412,13 +412,13 @@ describe("ObjectField", () => {
               validation={parentValidation}
             >
               {links => (
-                <React.Fragment>
+                <>
                   <TestField link={links.string} validation={childValidation} />
                   <TestField
                     link={links.string2}
                     validation={childValidation}
                   />
-                </React.Fragment>
+                </>
               )}
             </ObjectField>
           )}
