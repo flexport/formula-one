@@ -1,6 +1,6 @@
 // @flow
 
-import * as React from "react";
+import React, {useLayoutEffect} from "react";
 import TestRenderer from "react-test-renderer";
 import FeedbackStrategies from "../feedbackStrategies";
 import Form, {FormContext} from "../Form";
@@ -14,19 +14,21 @@ import TestField, {TestInput} from "./TestField";
 import LinkTap from "../testutils/LinkTap";
 import {forgetShape} from "../shapedTree";
 
-class NaughtyRenderingInput extends React.Component<{|
+type NaughtyProps = {|
   value: string,
   errors: $ReadOnlyArray<string>,
   onChange: string => void,
   onBlur: () => void,
-|}> {
-  componentDidMount() {
-    this.props.onChange("hello from cDM()");
-  }
-  render() {
-    return null;
-  }
+|}
+
+const NaughtyRenderingInput = (props: NaughtyProps) => {
+  // identical to useEffect, but it fires synchronously
+  useLayoutEffect(() => {
+    props.onChange("hello from cDM()");
+  }, []);
+  return null;
 }
+
 function NaughtyRenderingField(props) {
   return (
     <Field {...props}>
@@ -132,7 +134,7 @@ describe("Form", () => {
         </Form>
       );
 
-      const formState = renderer.root.findByType(ObjectField).instance.props
+      const formState = renderer.root.findByType(ObjectField).props
         .link.formState;
 
       let node = formState[1];
@@ -181,7 +183,7 @@ describe("Form", () => {
         </Form>
       );
 
-      const formState = renderer.root.findByType(ObjectField).instance.props
+      const formState = renderer.root.findByType(ObjectField).props
         .link.formState;
 
       let node = formState[1];
@@ -303,7 +305,7 @@ describe("Form", () => {
         </Form>
       );
 
-      let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      let link = renderer.root.findAllByType(TestField)[0].props.link;
       let errors = link.formState[1].data.errors.client;
       expect(errors).toEqual(["error 1"]);
 
@@ -313,7 +315,7 @@ describe("Form", () => {
         </Form>
       );
 
-      link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      link = renderer.root.findAllByType(TestField)[0].props.link;
       errors = link.formState[1].data.errors.client;
       expect(errors).toEqual(["error 2"]);
     });
@@ -761,7 +763,7 @@ describe("Form", () => {
       expect(validation1).toHaveBeenCalledTimes(1);
       expect(validation2).toHaveBeenCalledTimes(1);
 
-      let rootFormState = renderer.root.findByType(TestForm).instance.props.link
+      let rootFormState = renderer.root.findByType(TestForm).props.link
         .formState[1];
 
       let string1Errors = rootFormState.children.string1.data.errors.client;
@@ -786,7 +788,7 @@ describe("Form", () => {
       expect(validation1).toHaveBeenCalledTimes(1);
       expect(validation2).toHaveBeenCalledTimes(1);
 
-      rootFormState = renderer.root.findByType(TestForm).instance.props.link
+      rootFormState = renderer.root.findByType(TestForm).props.link
         .formState[1];
 
       // error for string1 remains
@@ -843,8 +845,7 @@ describe("Form", () => {
           )}
         </Form>
       );
-
-      let link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      let link = renderer.root.findAllByType(TestField)[0].props.link;
       let errors = link.formState[1].data.errors.client;
       expect(errors).toEqual(["error 1", "error 2"]);
 
@@ -858,7 +859,7 @@ describe("Form", () => {
         </Form>
       );
 
-      link = renderer.root.findAllByType(TestField)[0].instance.props.link;
+      link = renderer.root.findAllByType(TestField)[0].props.link;
       errors = link.formState[1].data.errors.client;
       expect(errors).toEqual(["error 1"]);
     });

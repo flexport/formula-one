@@ -369,7 +369,7 @@ describe("ObjectField", () => {
 
       expect(customChange).toHaveBeenCalledTimes(1);
 
-      const link = renderer.root.findByType(ObjectField).instance.props.link;
+      const link = renderer.root.findByType(ObjectField).props.link;
       // the value we get out is as if customChange didn't exist
       expect(link.formState).toEqual([
         {
@@ -442,7 +442,7 @@ describe("ObjectField", () => {
       expect(parentValidation).toHaveBeenCalledTimes(1);
       expect(childValidation).toHaveBeenCalledTimes(1 + 2 + 2);
 
-      const link = renderer.root.findByType(ObjectField).instance.props.link;
+      const link = renderer.root.findByType(ObjectField).props.link;
       expect(link.formState).toEqual([
         {
           string: "a whole new value",

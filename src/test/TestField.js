@@ -28,23 +28,23 @@ type Props = {|
   validation: Validation<string>,
 |};
 
-export default class TestField extends React.Component<Props> {
-  static defaultProps = {
-    validation: alwaysValid,
-  };
-
-  render() {
-    return (
-      <Field link={this.props.link} validation={this.props.validation}>
-        {(value, errors, onChange, onBlur) => (
-          <TestInput
-            value={value}
-            errors={errors}
-            onChange={onChange}
-            onBlur={onBlur}
-          />
-        )}
-      </Field>
-    );
-  }
+const TestField = (props: Props) => {
+  return (
+    <Field link={props.link} validation={props.validation}>
+      {(value, errors, onChange, onBlur) => (
+        <TestInput
+          value={value}
+          errors={errors}
+          onChange={onChange}
+          onBlur={onBlur}
+        />
+      )}
+    </Field>
+  )
 }
+
+TestField.defaultProps = {
+  validation: alwaysValid
+};
+
+export default TestField;
