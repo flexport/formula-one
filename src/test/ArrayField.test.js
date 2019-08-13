@@ -572,7 +572,7 @@ describe("ArrayField", () => {
       expect(customChange).toHaveBeenCalledTimes(1);
 
       // onChange should be called with the result of customChange
-      const link = renderer.root.findByType(ArrayField).instance.props.link;
+      const link = renderer.root.findByType(ArrayField).props.link;
       expect(link.formState).toEqual([
         ["one", "zwei", "three"],
         expect.anything(),
@@ -600,7 +600,7 @@ describe("ArrayField", () => {
               validation={parentValidation}
             >
               {links => (
-                <React.Fragment>
+                <>
                   {links.map((link, i) => (
                     <TestField
                       key={i}
@@ -608,7 +608,7 @@ describe("ArrayField", () => {
                       validation={childValidation}
                     />
                   ))}
-                </React.Fragment>
+                </>
               )}
             </ArrayField>
           )}
@@ -632,7 +632,7 @@ describe("ArrayField", () => {
       expect(parentValidation).toHaveBeenCalledTimes(1);
       expect(childValidation).toHaveBeenCalledTimes(1 + 2 + 2);
 
-      const link = renderer.root.findByType(ArrayField).instance.props.link;
+      const link = renderer.root.findByType(ArrayField).props.link;
       expect(link.formState).toEqual([["1", "2"], expect.anything()]);
     });
 

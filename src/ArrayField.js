@@ -307,7 +307,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       this._handleChildBlur
     );
     return (
-      <React.Fragment>
+      <>
         {this.props.children(
           links,
           {
@@ -328,7 +328,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
             value: formState[0],
           }
         )}
-      </React.Fragment>
+      </>
     );
   }
 }

@@ -25,26 +25,24 @@ export class TestInput extends React.Component<{|
 
 type Props = {|
   link: FieldLink<string>,
-  validation: Validation<string>,
+  validation?: Validation<string>,
 |};
 
-export default class TestField extends React.Component<Props> {
-  static defaultProps = {
-    validation: alwaysValid,
-  };
+const TestField = (props: Props) => {
+  const validation = props.validation || alwaysValid;
 
-  render() {
-    return (
-      <Field link={this.props.link} validation={this.props.validation}>
-        {(value, errors, onChange, onBlur) => (
-          <TestInput
-            value={value}
-            errors={errors}
-            onChange={onChange}
-            onBlur={onBlur}
-          />
-        )}
-      </Field>
-    );
-  }
+  return (
+    <Field link={props.link} validation={validation}>
+      {(value, errors, onChange, onBlur) => (
+        <TestInput
+          value={value}
+          errors={errors}
+          onChange={onChange}
+          onBlur={onBlur}
+        />
+      )}
+    </Field>
+  )
 }
+
+export default TestField;
