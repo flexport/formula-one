@@ -121,33 +121,23 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     index: number,
     newChild: FormState<E>
   ) => {
-    const newFormState = replaceArrayChild(
+    const [newValue, newTree] = replaceArrayChild(
       index,
       newChild,
       this.props.link.formState
     );
 
-    const oldValue = this.props.link.formState[0];
-    const newValue = newFormState[0];
+    const [oldValue, oldTree] = this.props.link.formState;
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
-    let validatedFormState: FormState<Array<E>>;
     if (customValue) {
       // A custom change occurred, which means the whole array needs to be
       // revalidated.
-      const customChangedFormState = [customValue, newFormState[1]];
-      validatedFormState = this.context.applyCustomChangeToTree(
-        this.props.link.path,
-        customChangedFormState
-      );
+      this._customChangeChildFields(customValue, oldTree)
     } else {
-      validatedFormState = this.context.applyChangeToNode(
-        this.props.link.path,
-        newFormState
-      );
+      this._validateThenApplyChange([newValue, newTree])
     }
-    this.props.link.onChange(validatedFormState);
   };
 
   _handleChildBlur: (number, ShapedTree<E, Extras>) => void = (
@@ -181,14 +171,20 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
 
   _addChildField: (number, E) => void = (index: number, childValue: E) => {
     const [oldValue, oldTree] = this.props.link.formState;
+
+    const newValue = insertAt(index, childValue, oldValue);
+    const customValue =
+      this.props.customChange && this.props.customChange(oldValue, newValue);
+    if (customValue) {
+      this._customChangeChildFields(customValue, oldTree);
+      return;
+    }
+
     const cleanNode = {
       errors: cleanErrors,
       meta: cleanMeta,
     };
 
-    const newValue = insertAt(index, childValue, oldValue);
-    const customValue =
-      this.props.customChange && this.props.customChange(oldValue, newValue);
     const newTree = dangerouslySetChildren(
       insertAt(
         index,
@@ -197,26 +193,27 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       ),
       oldTree
     );
-
-    if (customValue) {
-      this._validateThenApplyCustomChange([customValue, newTree]);
-    } else {
-      this._validateThenApplyChange([newValue, newTree]);
-    }
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   _addChildFields: (
     spans: $ReadOnlyArray<[number, $ReadOnlyArray<E>]>
   ) => void = spans => {
     const [oldValue, oldTree] = this.props.link.formState;
+
+    const newValue = insertSpans(spans, oldValue);
+    const customValue =
+      this.props.customChange && this.props.customChange(oldValue, newValue);
+    if (customValue) {
+      this._customChangeChildFields(customValue, oldTree);
+      return;
+    }
+
     const cleanNode = {
       errors: cleanErrors,
       meta: cleanMeta,
     };
 
-    const newValue = insertSpans(spans, oldValue);
-    const customValue =
-      this.props.customChange && this.props.customChange(oldValue, newValue);
     const newNodeSpans: Array<
       [number, $ReadOnlyArray<ShapedTree<E, Extras>>]
     > = spans.map(([index, content]) => [
@@ -228,11 +225,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       oldTree
     );
 
-    if (customValue) {
-      this._validateThenApplyCustomChange([customValue, newTree]);
-    } else {
-      this._validateThenApplyChange([newValue, newTree]);
-    }
+    this._validateThenApplyChange([newValue, newTree]);
   };
 
   _filterChildFields: (
@@ -246,13 +239,14 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
         predicate(value, i, arr.map(([v]) => v))
       )
     );
-    const newTree = dangerouslySetChildren(newChildren, oldTree);
+
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
     if (customValue) {
-      this._validateThenApplyCustomChange([customValue, newTree]);
+      this._customChangeChildFields(customValue, oldTree);
     } else {
+      const newTree = dangerouslySetChildren(newChildren, oldTree);
       this._validateThenApplyChange([newValue, newTree]);
     }
   };
@@ -293,13 +287,14 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
         zipped
       )
     );
-    const newTree = dangerouslySetChildren(newChildren, oldTree);
+
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
 
     if (customValue) {
-      this._validateThenApplyCustomChange([customValue, newTree]);
+      this._customChangeChildFields(customValue, oldTree);
     } else {
+      const newTree = dangerouslySetChildren(newChildren, oldTree);
       this._validateThenApplyChange([newValue, newTree]);
     }
   };
@@ -310,14 +305,14 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     const newValue = removeAt(index, oldValue);
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
-    const newTree = dangerouslySetChildren(
-      removeAt(index, shapedArrayChildren(oldTree)),
-      oldTree
-    );
 
     if (customValue) {
-      this._validateThenApplyCustomChange([customValue, newTree]);
+      this._customChangeChildFields(customValue, oldTree);
     } else {
+      const newTree = dangerouslySetChildren(
+        removeAt(index, shapedArrayChildren(oldTree)),
+        oldTree
+      );
       this._validateThenApplyChange([newValue, newTree]);
     }
   };
@@ -328,17 +323,32 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     const newValue = moveFromTo(from, to, oldValue);
     const customValue =
       this.props.customChange && this.props.customChange(oldValue, newValue);
-    const newTree = dangerouslySetChildren(
-      moveFromTo(from, to, shapedArrayChildren(oldTree)),
-      oldTree
-    );
 
     if (customValue) {
-      this._validateThenApplyCustomChange([customValue, newTree]);
+      this._customChangeChildFields(customValue, oldTree);
     } else {
+      const newTree = dangerouslySetChildren(
+        moveFromTo(from, to, shapedArrayChildren(oldTree)),
+        oldTree
+      );
       this._validateThenApplyChange([newValue, newTree]);
     }
   };
+
+  _customChangeChildFields(
+    customValue: Array<E>,
+    oldTree: ShapedTree<Array<E>, Extras>
+  ) {
+    const cleanNode = {
+      errors: cleanErrors,
+      meta: cleanMeta,
+    };
+    const newTree = dangerouslySetChildren(
+      customValue.map((v) => treeFromValue(v, cleanNode)),
+      oldTree
+    );
+    this._validateThenApplyCustomChange([customValue, newTree]);
+  }
 
   render() {
     const {formState, path} = this.props.link;
