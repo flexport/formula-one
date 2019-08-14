@@ -42,7 +42,7 @@ const TestField = (props: Props) => {
         />
       )}
     </Field>
-  )
-}
+  );
+};
 
 export default TestField;
