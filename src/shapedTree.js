@@ -165,9 +165,7 @@ export function updateAtPath<T, Node>(
     );
     invariant(
       0 <= firstStep.index && firstStep.index < tree.children.length,
-      `Tried to take path index ${
-        firstStep.index
-      } but array from tree has length ${tree.children.length}`
+      `Tried to take path index ${firstStep.index} but array from tree has length ${tree.children.length}`
     );
     const newChild = updateAtPath(
       restStep,
@@ -185,9 +183,7 @@ export function updateAtPath<T, Node>(
     const nextTree = tree.children[firstStep.key];
     invariant(
       nextTree !== undefined,
-      `Tried to take path key ${
-        firstStep.key
-      } but it isn't present on object in tree`
+      `Tried to take path key ${firstStep.key} but it isn't present on object in tree`
     );
     const newChild = updateAtPath(restStep, updater, nextTree);
     // $FlowFixMe(zach): I think this is safe, might need GADTs for the type checker to understand why

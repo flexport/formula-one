@@ -19,7 +19,7 @@ type NaughtyProps = {|
   errors: $ReadOnlyArray<string>,
   onChange: string => void,
   onBlur: () => void,
-|}
+|};
 
 const NaughtyRenderingInput = (props: NaughtyProps) => {
   // identical to useEffect, but it fires synchronously
@@ -27,7 +27,7 @@ const NaughtyRenderingInput = (props: NaughtyProps) => {
     props.onChange("hello from cDM()");
   }, []);
   return null;
-}
+};
 
 function NaughtyRenderingField(props) {
   return (
@@ -134,8 +134,8 @@ describe("Form", () => {
         </Form>
       );
 
-      const formState = renderer.root.findByType(ObjectField).props
-        .link.formState;
+      const formState = renderer.root.findByType(ObjectField).props.link
+        .formState;
 
       let node = formState[1];
       expect(node.data.errors.client).toEqual(["object error"]);
@@ -183,8 +183,8 @@ describe("Form", () => {
         </Form>
       );
 
-      const formState = renderer.root.findByType(ObjectField).props
-        .link.formState;
+      const formState = renderer.root.findByType(ObjectField).props.link
+        .formState;
 
       let node = formState[1];
       expect(node.data.errors.client).toEqual([]);
