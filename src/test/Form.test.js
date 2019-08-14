@@ -883,7 +883,12 @@ describe("Form", () => {
     linkOnSubmit();
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit).toHaveBeenLastCalledWith(1, undefined);
+    expect(onSubmit).toHaveBeenLastCalledWith(1, undefined, {
+      valid: {
+        client: true,
+        external: true,
+      },
+    });
   });
 
   it("Calls onSubmit with extra info when submitted", () => {
@@ -901,7 +906,49 @@ describe("Form", () => {
     linkOnSubmit("extra");
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-    expect(onSubmit).toHaveBeenLastCalledWith(expect.anything(), "extra");
+    expect(onSubmit).toHaveBeenLastCalledWith(
+      expect.anything(),
+      "extra",
+      expect.anything()
+    );
+  });
+
+  it("Calls onSubmit with validation info when submitted", () => {
+    const onSubmit = jest.fn();
+    const renderFn = jest.fn(link => (
+      <TestField
+        link={link}
+        validation={s => {
+          if (s.length > 0) {
+            return [];
+          } else {
+            return ["No blank strings"];
+          }
+        }}
+      />
+    ));
+    TestRenderer.create(
+      <Form
+        initialValue={""}
+        onSubmit={onSubmit}
+        externalErrors={{"/": ["External error", "Another external error"]}}
+      >
+        {renderFn}
+      </Form>
+    );
+
+    expect(onSubmit).toHaveBeenCalledTimes(0);
+
+    const linkOnSubmit = renderFn.mock.calls[0][1];
+    linkOnSubmit();
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit).toHaveBeenLastCalledWith("", undefined, {
+      valid: {
+        client: false,
+        external: false,
+      },
+    });
   });
 
   it("Enforces types on onSubmit", () => {

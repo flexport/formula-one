@@ -17,6 +17,7 @@ import {type Direction} from "./tree";
 import {
   type FormState,
   isValid,
+  isExternallyValid,
   getExtras,
   flatRootErrors,
   freshFormState,
@@ -47,6 +48,7 @@ export type ValidationOps<T> = {
 type FieldId = number;
 type ValidationMap = Map<EncodedPath, Map<FieldId, Validation<mixed>>>;
 type ExternalErrors = null | {+[path: string]: $ReadOnlyArray<string>};
+type SubmitTips = {valid: {client: boolean, external: boolean}};
 
 const noOps = {
   unregister() {},
@@ -324,7 +326,7 @@ type Props<T, ExtraSubmitData> = {|
   // This is *only* used to intialize the form. Further changes will be ignored
   +initialValue: T,
   +feedbackStrategy: FeedbackStrategy,
-  +onSubmit: (T, ExtraSubmitData) => void,
+  +onSubmit: (T, ExtraSubmitData, SubmitTips) => void,
   +onChange: T => void,
   +onValidation: boolean => void,
   +externalErrors: ExternalErrors,
@@ -420,7 +422,16 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     extraData: ExtraSubmitData
   ) => {
     this.setState({submitted: true});
-    this.props.onSubmit(this.state.formState[0], extraData);
+
+    const {formState} = this.state;
+    const tips: SubmitTips = {
+      valid: {
+        client: isValid(formState),
+        external: isExternallyValid(formState),
+      },
+    };
+
+    this.props.onSubmit(this.state.formState[0], extraData, tips);
   };
 
   _handleChange: (newValue: FormState<T>) => void = (
