@@ -119,3 +119,12 @@ export function isValid<T>(formState: FormState<T>): boolean {
     formState[1]
   );
 }
+
+export function isExternallyValid<T>(formState: FormState<T>): boolean {
+  return foldMapShapedTree(
+    ({errors: {external}}) => external === "unchecked" || external.length === 0,
+    true,
+    (l, r) => l && r,
+    formState[1]
+  );
+}
