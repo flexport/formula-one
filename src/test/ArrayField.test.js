@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
+import {type JestMockT} from "jest";
 import Form from "../Form";
 import ArrayField from "../ArrayField";
 import {type FieldLink} from "../types";
@@ -189,7 +190,8 @@ describe("ArrayField", () => {
       arrayLinks[0].onBlur(newElementTree);
 
       expect(link.onBlur).toHaveBeenCalled();
-      const newArrayTree = link.onBlur.mock.calls[0][0];
+      const linkOnBlur: JestMockT = link.onBlur;
+      const newArrayTree = linkOnBlur.mock.calls[0][0];
       expect(newArrayTree.data.meta).toMatchObject({
         touched: true,
         changed: false,

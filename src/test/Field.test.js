@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
+import {type JestMockT} from "jest";
 
 import Field from "../Field";
 import {type FieldLink} from "../types";
@@ -116,7 +117,8 @@ describe("Field", () => {
     inner.instance.blur();
     expect(link.onBlur).toHaveBeenCalledTimes(1);
 
-    const tree = link.onBlur.mock.calls[0][0];
+    const linkOnBlur: JestMockT = link.onBlur;
+    const tree = linkOnBlur.mock.calls[0][0];
     expect(tree.data).toMatchObject({
       meta: {
         touched: true,
