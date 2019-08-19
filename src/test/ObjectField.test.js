@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
+import {type JestMockT} from "jest";
 import {FormContext} from "../Form";
 import ObjectField from "../ObjectField";
 import Form from "../Form";
@@ -239,7 +240,9 @@ describe("ObjectField", () => {
       objectLinks.number.onBlur(newChildTree);
 
       expect(link.onBlur).toHaveBeenCalled();
-      const newObjectTree = link.onBlur.mock.calls[0][0];
+
+      const linkOnBlur: JestMockT = link.onBlur;
+      const newObjectTree = linkOnBlur.mock.calls[0][0];
       expect(newObjectTree.children.number).toBe(newChildTree);
       expect(newObjectTree.data.meta).toMatchObject({
         touched: true,
