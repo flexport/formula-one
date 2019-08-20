@@ -39,6 +39,8 @@ import {
 } from "./EncodedPath";
 import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
 import alwaysValid from "./alwaysValid";
+import BeforeNavigate from "./BeforeNavigate";
+import Delegate from "./Delegate";
 
 export type ValidationOps<T> = {
   unregister: () => void,
@@ -329,6 +331,7 @@ type Props<T, ExtraSubmitData> = {|
   +onSubmit: (T, ExtraSubmitData, SubmitTips) => void,
   +onChange: T => void,
   +onValidation: boolean => void,
+  +delegate?: Delegate,
   +externalErrors: ExternalErrors,
   +children: (
     link: FieldLink<T>,
@@ -410,6 +413,26 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         this.props.onValidation(isValid(this.state.formState));
       }
     );
+
+    const {delegate} = this.props;
+    if (delegate) {
+      BeforeNavigate.register(delegate);
+    }
+  }
+
+  componentDidUpdate() {
+    const {delegate} = this.props;
+
+    if (delegate) {
+      delegate.dirty = this._isDirty();
+    }
+  }
+
+  componentWillUnmount() {
+    const {delegate} = this.props;
+    if (delegate) {
+      BeforeNavigate.unregister(delegate);
+    }
   }
 
   // Public API: submit from the outside
@@ -463,6 +486,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     this.setState({
       formState: [this.state.formState[0], newTree],
     });
+  };
+
+  _isDirty: () => boolean = () => {
+    return !this.state.pristine && !this.state.submitted;
   };
 
   /**

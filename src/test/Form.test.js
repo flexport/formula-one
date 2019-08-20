@@ -13,6 +13,8 @@ import {expectLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
 import LinkTap from "../testutils/LinkTap";
 import {forgetShape} from "../shapedTree";
+import BeforeNavigate from "../BeforeNavigate";
+import Delegate from "../Delegate";
 
 type NaughtyProps = {|
   value: string,
@@ -1095,6 +1097,34 @@ describe("Form", () => {
       // commits is constant!
       expect(commits).toBe(1 + 1);
       expect(commits).not.toBe(1 + N);
+    });
+  });
+
+  describe("Navigation protection", () => {
+    it("customizeDirty has higher priority than dirty", () => {
+      const renderFn = jest.fn(() => null);
+      const delegate = new Delegate("/", {
+        customizeDirty: jest.fn((nextUrl, dirty) => !dirty),
+      });
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={1} delegate={delegate}>
+          {renderFn}
+        </Form>
+      );
+
+      const shouldConfirm = BeforeNavigate.shouldConfirm("/another_page");
+      expect(delegate.customizeDirty).toBeCalledTimes(1);
+      expect(shouldConfirm).toBe(true);
+
+      // Ask for confirmation
+      // console.log("Changes you made may not be saved!");
+
+      const spy = jest.spyOn(BeforeNavigate, "unregister");
+      renderer.unmount();
+      window.history.pushState({}, "Hello", "/another_page");
+
+      expect(spy).toBeCalledTimes(1);
     });
   });
 });
