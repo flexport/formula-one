@@ -13,7 +13,7 @@
   ],
   "scripts": {
     "prettier:all": "find src -name '*.js' | xargs yarn prettier",
-    "build": "babel -d dist/ src/",
+    "build": "babel -d dist/ src/ --copy-files",
     "prepublishOnly": "yarn run prettier:all --check && yarn eslint ./src && yarn run flow && yarn run jest && yarn run build",
     "test": "jest"
   },
