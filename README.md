@@ -152,6 +152,7 @@ Some base strategies are exported as fields on the `FeedbackStrategies` object. 
 | ---------------------------------------------- | ------------------------------------------------------------------------------------ |
 | `FeedbackStrategies.Always`                    | Always show errors (default)                                                         |
 | `FeedbackStrategies.Touched`                   | Show errors for fields which have been touched (changed or blurred)                  |
+| `FeedbackStrategies.Blurred`                   | Show errors for fields which have been blurred                                       |
 | `FeedbackStrategies.Changed`                   | Show errors for fields which have been changed                                       |
 | `FeedbackStrategies.ClientValidationSucceeded` | Show errors for fields which have had their validations pass at any time in the past |
 | `FeedbackStrategies.Pristine`                  | Show errors when the form has not been modified                                      |
