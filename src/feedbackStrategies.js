@@ -10,6 +10,9 @@ const strategies = {
   Touched(metaForm: MetaForm, metaField: MetaField) {
     return metaField.touched;
   },
+  Blurred(metaForm: MetaForm, metaField: MetaField) {
+    return metaField.blurred;
+  },
   Changed(metaForm: MetaForm, metaField: MetaField) {
     return metaField.changed;
   },

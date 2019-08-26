@@ -80,6 +80,10 @@ export function setExtrasTouched({errors, meta}: Extras): Extras {
   return {errors, meta: {...meta, touched: true}};
 }
 
+export function setExtrasBlurred({errors, meta}: Extras): Extras {
+  return {errors, meta: {...meta, touched: true, blurred: true}};
+}
+
 export function replaceObjectChild<T: {}, V>(
   key: string,
   child: FormState<V>,

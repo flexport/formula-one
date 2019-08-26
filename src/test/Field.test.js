@@ -121,6 +121,7 @@ describe("Field", () => {
     const tree = linkOnBlur.mock.calls[0][0];
     expect(tree.data).toMatchObject({
       meta: {
+        blurred: true,
         touched: true,
         changed: false,
         succeeded: false,
