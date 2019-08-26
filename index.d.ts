@@ -13,6 +13,7 @@ declare namespace FeedbackStrategies {
   export function not(x: FeedbackStrategy): FeedbackStrategy;
   export const Always: FeedbackStrategy;
   export const Touched: FeedbackStrategy;
+  export const Blurred: FeedbackStrategy;
   export const Changed: FeedbackStrategy;
   export const ClientValidationSucceeded: FeedbackStrategy;
   export const Pristine: FeedbackStrategy;
