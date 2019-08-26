@@ -26,6 +26,17 @@ describe("feedbackStrategies", () => {
       });
     });
 
+    describe("Blurred", () => {
+      it("returns true when the field is touched", () => {
+        // $FlowFixMe
+        expect(FeedbackStrategies.Blurred(null, {blurred: true})).toBe(true);
+      });
+      it("returns false when the field is not touched", () => {
+        // $FlowFixMe
+        expect(FeedbackStrategies.Blurred(null, {blurred: false})).toBe(false);
+      });
+    });
+
     describe("Changed", () => {
       it("returns true when the field is changed", () => {
         // $FlowFixMe

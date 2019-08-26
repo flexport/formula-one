@@ -9,7 +9,7 @@ import {
   type ValidationOps,
   validationFnNoOps,
 } from "./Form";
-import {setExtrasTouched, getExtras, isValid} from "./formState";
+import {setExtrasBlurred, getExtras, isValid} from "./formState";
 import alwaysValid from "./alwaysValid";
 
 type Props<T> = {|
@@ -78,7 +78,7 @@ export default class Field<T> extends React.Component<Props<T>> {
 
     this.props.link.onBlur(
       // TODO(zach): Not sure if we should blow away external errors here
-      mapRoot(setExtrasTouched, tree)
+      mapRoot(setExtrasBlurred, tree)
     );
   };
 

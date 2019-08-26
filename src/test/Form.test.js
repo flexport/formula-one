@@ -346,6 +346,7 @@ describe("Form", () => {
       expect(forgetShape(tree).data).toEqual({
         meta: {
           touched: false,
+          blurred: false,
           changed: false,
           succeeded: false,
           asyncValidationInFlight: false,

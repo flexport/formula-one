@@ -18,7 +18,7 @@ import {
 import {
   type FormState,
   replaceObjectChild,
-  setExtrasTouched,
+  setExtrasBlurred,
   objectChild,
   getExtras,
   flatRootErrors,
@@ -140,7 +140,7 @@ export default class ObjectField<T: {}> extends React.Component<
     const [_, tree] = this.props.link.formState;
     this.props.link.onBlur(
       mapRoot(
-        setExtrasTouched,
+        setExtrasBlurred,
         dangerouslyReplaceObjectChild(key, childTree, tree)
       )
     );

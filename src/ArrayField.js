@@ -36,7 +36,7 @@ import {
 import {
   type FormState,
   replaceArrayChild,
-  setExtrasTouched,
+  setExtrasBlurred,
   arrayChild,
   getExtras,
   flatRootErrors,
@@ -157,7 +157,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     const [_, tree] = this.props.link.formState;
     this.props.link.onBlur(
       mapRoot(
-        setExtrasTouched,
+        setExtrasBlurred,
         dangerouslyReplaceArrayChild(index, childTree, tree)
       )
     );
