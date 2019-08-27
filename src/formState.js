@@ -76,10 +76,6 @@ export function arrayChild<E>(
   return [value[index], shapedArrayChild(index, tree)];
 }
 
-export function setExtrasTouched({errors, meta}: Extras): Extras {
-  return {errors, meta: {...meta, touched: true}};
-}
-
 export function setExtrasBlurred({errors, meta}: Extras): Extras {
   return {errors, meta: {...meta, touched: true, blurred: true}};
 }
