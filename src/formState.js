@@ -38,6 +38,7 @@ export function changedFormState<T>(value: T): FormState<T> {
     treeFromValue(value, {
       errors: cleanErrors,
       meta: {
+        blurred: true,
         touched: true,
         changed: true,
         succeeded: false,
