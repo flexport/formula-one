@@ -13,7 +13,7 @@ export type Err = {
 
 export type MetaField = {
   touched: boolean, // a blur or a change
-  blurred: boolen,
+  blurred: boolean,
   changed: boolean,
   succeeded: boolean,
   asyncValidationInFlight: boolean,
