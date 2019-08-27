@@ -78,16 +78,10 @@ export type AddFields<T> = (spans: ReadonlyArray<Span<T>>) => void;
 export type FilterFields<T> = (
   predicate: (value: T, index: number, arr: ReadonlyArray<T>) => boolean
 ) => void;
-export type ModifyFields<T> = (
-  modifiers: {
-    insertSpans?: ReadonlyArray<Span<T>>;
-    filterPredicate?: (
-      value: T,
-      index: number,
-      arr: ReadonlyArray<T>
-    ) => boolean;
-  }
-) => void;
+export type ModifyFields<T> = (modifiers: {
+  insertSpans?: ReadonlyArray<Span<T>>;
+  filterPredicate?: (value: T, index: number, arr: ReadonlyArray<T>) => boolean;
+}) => void;
 
 export interface ArrayFieldProps<E, T extends Array<E>> {
   link: FieldLink<T>;
@@ -127,13 +121,11 @@ export type ClientErrors = ReadonlyArray<string> | "pending";
 export type ExtErrors = ReadonlyArray<string> | "unchecked";
 export interface ErrorsHelperProps<T> {
   link: FieldLink<T>;
-  children: (
-    errorsInfo: {
-      shouldShowErrors: boolean;
-      client: ClientErrors;
-      external: ExtErrors;
-      flattened: ReadonlyArray<string>;
-    }
-  ) => React.ReactNode;
+  children: (errorsInfo: {
+    shouldShowErrors: boolean;
+    client: ClientErrors;
+    external: ExtErrors;
+    flattened: ReadonlyArray<string>;
+  }) => React.ReactNode;
 }
 declare class ErrorsHelper<T> extends React.Component<ErrorsHelperProps<T>> {}
