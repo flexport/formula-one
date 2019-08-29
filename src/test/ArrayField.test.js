@@ -272,17 +272,19 @@ describe("ArrayField", () => {
       });
 
       it("triggers customChange", () => {
-        const renderFn = jest.fn(links => links.map((link, i) => (
-          <TestField link={link} key={i} validation={validation} />
-        )));
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField link={link} key={i} validation={validation} />
+          ))
+        );
 
         const customChange = jest.fn((prevValue, nextValue) => {
           return new Array(nextValue.length).fill("hello");
         });
 
-        const validation = jest.fn((value) => {
+        const validation = jest.fn(value => {
           if (value.trim() === "hello") {
-            return ["Cannot be \"hello\""];
+            return ['Cannot be "hello"'];
           }
           return [];
         });
@@ -312,17 +314,11 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
-        expect(customChange).toHaveBeenLastCalledWith([
-          "one",
-          "two",
-          "three",
-        ], [
-          "zero",
-          "one",
-          "two",
-          "three",
-        ]);
-      })
+        expect(customChange).toHaveBeenLastCalledWith(
+          ["one", "two", "three"],
+          ["zero", "one", "two", "three"]
+        );
+      });
     });
 
     describe("removeField", () => {
@@ -369,17 +365,19 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith(["one", "three"]);
       });
       it("triggers customChange after entry is removed", () => {
-        const renderFn = jest.fn(links => links.map((link, i) => (
-          <TestField link={link} key={i} validation={validation} />
-        )));
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField link={link} key={i} validation={validation} />
+          ))
+        );
 
         const customChange = jest.fn((prevValue, nextValue) => {
           return new Array(nextValue.length).fill("hello");
         });
 
-        const validation = jest.fn((value) => {
+        const validation = jest.fn(value => {
           if (value.trim() === "hello") {
-            return ["Cannot be \"hello\""];
+            return ['Cannot be "hello"'];
           }
           return [];
         });
@@ -408,14 +406,10 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
-        expect(customChange).toHaveBeenLastCalledWith([
-          "one",
-          "two",
-          "three",
-        ], [
-          "one",
-          "three",
-        ]);
+        expect(customChange).toHaveBeenLastCalledWith(
+          ["one", "two", "three"],
+          ["one", "three"]
+        );
       });
     });
 
@@ -459,17 +453,19 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith(["one", "three", "two"]);
       });
       it("triggers customChange after the entry is moved", () => {
-        const renderFn = jest.fn(links => links.map((link, i) => (
-          <TestField link={link} key={i} validation={validation} />
-        )));
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField link={link} key={i} validation={validation} />
+          ))
+        );
 
         const customChange = jest.fn((prevValue, nextValue) => {
           return new Array(nextValue.length).fill("hello");
         });
 
-        const validation = jest.fn((value) => {
+        const validation = jest.fn(value => {
           if (value.trim() === "hello") {
-            return ["Cannot be \"hello\""];
+            return ['Cannot be "hello"'];
           }
           return [];
         });
@@ -498,16 +494,11 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
-        expect(customChange).toHaveBeenLastCalledWith([
-          "one",
-          "two",
-          "three",
-        ], [
-          "one",
-          "three",
-          "two",
-        ]);
-      })
+        expect(customChange).toHaveBeenLastCalledWith(
+          ["one", "two", "three"],
+          ["one", "three", "two"]
+        );
+      });
     });
 
     describe("addFields", () => {
@@ -558,17 +549,19 @@ describe("ArrayField", () => {
         ]);
       });
       it("triggers customChange", () => {
-        const renderFn = jest.fn(links => links.map((link, i) => (
-          <TestField link={link} key={i} validation={validation} />
-        )));
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField link={link} key={i} validation={validation} />
+          ))
+        );
 
         const customChange = jest.fn((prevValue, nextValue) => {
           return new Array(nextValue.length).fill("hello");
         });
 
-        const validation = jest.fn((value) => {
+        const validation = jest.fn(value => {
           if (value.trim() === "hello") {
-            return ["Cannot be \"hello\""];
+            return ['Cannot be "hello"'];
           }
           return [];
         });
@@ -598,19 +591,10 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
-        expect(customChange).toHaveBeenLastCalledWith([
-          "one",
-          "two",
-          "three",
-        ], [
-          "negative one",
-          "zero",
-          "one",
-          "two",
-          "three",
-          "four",
-          "five",
-        ]);
+        expect(customChange).toHaveBeenLastCalledWith(
+          ["one", "two", "three"],
+          ["negative one", "zero", "one", "two", "three", "four", "five"]
+        );
       });
     });
 
@@ -656,17 +640,19 @@ describe("ArrayField", () => {
       });
 
       it("triggers customChange after fields are filtered", () => {
-        const renderFn = jest.fn(links => links.map((link, i) => (
-          <TestField link={link} key={i} validation={validation} />
-        )));
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField link={link} key={i} validation={validation} />
+          ))
+        );
 
         const customChange = jest.fn((prevValue, nextValue) => {
           return new Array(nextValue.length).fill("hello");
         });
 
-        const validation = jest.fn((value) => {
+        const validation = jest.fn(value => {
           if (value.trim() === "hello") {
-            return ["Cannot be \"hello\""];
+            return ['Cannot be "hello"'];
           }
           return [];
         });
@@ -696,14 +682,10 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
-        expect(customChange).toHaveBeenLastCalledWith([
-          "one",
-          "two",
-          "three",
-        ], [
-          "one",
-          "two",
-        ]);
+        expect(customChange).toHaveBeenLastCalledWith(
+          ["one", "two", "three"],
+          ["one", "two"]
+        );
       });
     });
 
@@ -756,17 +738,19 @@ describe("ArrayField", () => {
         ]);
       });
       it("triggers customChange after fields are modified", () => {
-        const renderFn = jest.fn(links => links.map((link, i) => (
-          <TestField link={link} key={i} validation={validation} />
-        )));
+        const renderFn = jest.fn(links =>
+          links.map((link, i) => (
+            <TestField link={link} key={i} validation={validation} />
+          ))
+        );
 
         const customChange = jest.fn((prevValue, nextValue) => {
           return new Array(nextValue.length).fill("hello");
         });
 
-        const validation = jest.fn((value) => {
+        const validation = jest.fn(value => {
           if (value.trim() === "hello") {
-            return ["Cannot be \"hello\""];
+            return ['Cannot be "hello"'];
           }
           return [];
         });
@@ -799,17 +783,10 @@ describe("ArrayField", () => {
         expect(validation).toHaveBeenLastCalledWith("hello");
 
         expect(customChange).toHaveBeenCalledTimes(1);
-        expect(customChange).toHaveBeenLastCalledWith([
-          "one",
-          "two",
-          "three",
-        ], [
-          "start",
-          "two",
-          "middle",
-          "content",
-          "three",
-        ]);
+        expect(customChange).toHaveBeenLastCalledWith(
+          ["one", "two", "three"],
+          ["start", "two", "middle", "content", "three"]
+        );
       });
     });
   });

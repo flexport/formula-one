@@ -134,9 +134,9 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     if (customValue) {
       // A custom change occurred, which means the whole array needs to be
       // revalidated.
-      this._customChangeChildFields(customValue, oldTree)
+      this._customChangeChildFields(customValue, oldTree);
     } else {
-      this._validateThenApplyChange([newValue, newTree])
+      this._validateThenApplyChange([newValue, newTree]);
     }
   };
 
@@ -344,7 +344,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
       meta: cleanMeta,
     };
     const newTree = dangerouslySetChildren(
-      customValue.map((v) => treeFromValue(v, cleanNode)),
+      customValue.map(v => treeFromValue(v, cleanNode)),
       oldTree
     );
     this._validateThenApplyCustomChange([customValue, newTree]);
