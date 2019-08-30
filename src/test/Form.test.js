@@ -13,8 +13,7 @@ import {expectLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
 import LinkTap from "../testutils/LinkTap";
 import {forgetShape} from "../shapedTree";
-import BeforeNavigate from "../BeforeNavigate";
-import Delegate from "../Delegate";
+import Tracer from "../tracer";
 
 type NaughtyProps = {|
   value: string,
@@ -1100,31 +1099,62 @@ describe("Form", () => {
     });
   });
 
-  describe("Navigation protection", () => {
-    it("customizeDirty has higher priority than dirty", () => {
+  describe("Tracer", () => {
+    it("registers TracerDelegate when traceDirty equals true", () => {
       const renderFn = jest.fn(() => null);
-      const delegate = new Delegate("/", {
-        customizeDirty: jest.fn((nextUrl, dirty) => !dirty),
-      });
 
       const renderer = TestRenderer.create(
-        <Form initialValue={1} delegate={delegate}>
+        <Form initialValue={1} traceDirty={true}>
           {renderFn}
         </Form>
       );
 
-      const shouldConfirm = BeforeNavigate.shouldConfirm("/another_page");
-      expect(delegate.customizeDirty).toBeCalledTimes(1);
-      expect(shouldConfirm).toBe(true);
+      expect(Tracer.delegates.length).toBe(1);
+      expect(Tracer.isDirty()).toBe(false);
 
-      // Ask for confirmation
-      // console.log("Changes you made may not be saved!");
-
-      const spy = jest.spyOn(BeforeNavigate, "unregister");
       renderer.unmount();
-      window.history.pushState({}, "Hello", "/another_page");
 
-      expect(spy).toBeCalledTimes(1);
+      expect(Tracer.delegates.length).toBe(0);
+    });
+
+    it("updates dirty after form state changes", () => {
+      const renderFn = jest.fn(link => (
+        <FormContext.Consumer>
+          {() => <TestField link={link} />}
+        </FormContext.Consumer>
+      ));
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={"Hello"} traceDirty={true}>
+          {renderFn}
+        </Form>
+      );
+
+      expect(Tracer.isDirty()).toBe(false);
+
+      const inner = renderer.root.findByType(TestInput);
+      inner.instance.change("World");
+
+      expect(Tracer.isDirty()).toBe(true);
+
+      const linkOnSubmit = renderFn.mock.calls[0][1];
+      linkOnSubmit();
+      // reset isDirty after form submits
+      expect(Tracer.isDirty()).toBe(false);
+    });
+
+    it("customizes isDirty by using customDirty", () => {
+      const renderFn = jest.fn(() => null);
+      const customDirty = jest.fn(() => true);
+
+      TestRenderer.create(
+        <Form initialValue={1} traceDirty={true} customDirty={customDirty}>
+          {renderFn}
+        </Form>
+      );
+
+      expect(Tracer.isDirty()).toBe(true);
+      expect(customDirty).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -4,8 +4,7 @@
 import FeedbackStrategies, {and, or, not} from "./feedbackStrategies";
 import {LinkTap} from "./testutils";
 
-export {default as BeforeNavigate} from "./BeforeNavigate";
-export {default as Delegate} from "./Delegate";
+export {default as Tracer} from "./tracer";
 export {default as Form} from "./Form";
 export {default as ObjectField} from "./ObjectField";
 export {default as ArrayField} from "./ArrayField";
