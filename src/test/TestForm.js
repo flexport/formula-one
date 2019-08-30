@@ -4,10 +4,7 @@ import * as React from "react";
 
 import {FormContext, type FormContextPayload} from "../Form";
 
-type Props = {
-  ...$Shape<{...FormContextPayload<mixed>}>,
-  children: React.Node,
-};
+type Props = $Shape<{...FormContextPayload<mixed>, children: React.Node}>;
 
 export default function TestForm({
   children,
