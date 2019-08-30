@@ -4,8 +4,11 @@ import * as React from "react";
 
 import {FormContext, type FormContextPayload} from "../Form";
 
+// see https://github.com/facebook/flow/issues/6906#issuecomment-519723851
+type BetterShape<T> = $Rest<T, {}>;
+
 type Props = {
-  ...$Shape<{...FormContextPayload<mixed>}>,
+  ...BetterShape<FormContextPayload<mixed>>,
   children: React.Node,
 };
 
