@@ -6,14 +6,15 @@
   "license": "MIT",
   "repository": "github:flexport/formula-one",
   "main": "./dist/index.js",
-  "types": "./src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist",
     "src"
   ],
   "scripts": {
-    "build": "babel -d dist/ src/",
-    "prepublishOnly": "yarn eslint ./src && yarn run flow && yarn run jest && yarn run build",
+    "prettier:all": "git ls-files | grep -Ev '^(flow-typed|dist)' | grep -E '\\.(js|ts|json|ya?ml|md)$' | xargs yarn prettier",
+    "build": "babel -d dist/ src/ --copy-files",
+    "prepublishOnly": "yarn run prettier:all --check && yarn eslint ./src && yarn run flow && yarn run jest && yarn run build",
     "test": "jest"
   },
   "peerDependencies": {
