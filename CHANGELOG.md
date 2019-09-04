@@ -1,5 +1,9 @@
 # Changelog
 
+### v0.9.2
+
+- Add TypeScript type definitions! 🎉
+
 ### v0.9.1
 
 #### Breaking changes
