@@ -34,10 +34,12 @@ export interface AdditionalRenderInfo<T> {
   value: T;
 }
 
+export type SubmitTips = {valid: {client: boolean, external: boolean}};
+
 export interface FormProps<T, ExtraSubmitData> {
   initialValue: T;
   feedbackStrategy?: FeedbackStrategy;
-  onSubmit?: (value: T, extraData: ExtraSubmitData) => void;
+  onSubmit?: (value: T, extraData: ExtraSubmitData, submitTips: SubmitTips) => void;
   onChange?: (value: T) => void;
   onValidation?: (valid: boolean) => void;
   externalErrors?: ExternalErrors;
