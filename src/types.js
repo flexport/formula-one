@@ -45,6 +45,7 @@ export type Extras = {
 export type AdditionalRenderInfo<T> = {|
   +touched: boolean,
   +changed: boolean,
+  +blurred: boolean,
   +shouldShowErrors: boolean,
   +unfilteredErrors: $ReadOnlyArray<string>,
   +valid: boolean,

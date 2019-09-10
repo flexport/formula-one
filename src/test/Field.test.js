@@ -207,6 +207,7 @@ describe("Field", () => {
       expect.objectContaining({
         touched: false,
         changed: false,
+        blurred: false,
         shouldShowErrors: expect.anything(),
         unfilteredErrors: expect.arrayContaining([
           "An external error",

@@ -648,6 +648,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
           {
             touched: getExtras(formState).meta.touched,
             changed: getExtras(formState).meta.changed,
+            blurred: getExtras(formState).meta.blurred,
             shouldShowErrors: this.props.feedbackStrategy(
               metaForm,
               getExtras(formState).meta

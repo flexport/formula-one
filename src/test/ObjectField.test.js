@@ -115,6 +115,7 @@ describe("ObjectField", () => {
         expect.objectContaining({
           touched: false,
           changed: false,
+          blurred: false,
           shouldShowErrors: expect.anything(),
           unfilteredErrors: expect.arrayContaining([
             "An external error",
@@ -247,6 +248,7 @@ describe("ObjectField", () => {
       expect(newObjectTree.data.meta).toMatchObject({
         touched: true,
         changed: false,
+        blurred: true,
       });
     });
 

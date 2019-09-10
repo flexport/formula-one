@@ -105,6 +105,7 @@ export default class Field<T> extends React.Component<Props<T>> {
     return this.props.children(value, flatErrors, this.onChange, this.onBlur, {
       touched: meta.touched,
       changed: meta.changed,
+      blurred: meta.blurred,
       shouldShowErrors: shouldShowError(meta),
       unfilteredErrors: getErrors(errors),
       asyncValidationInFlight: false, // no validations on Form

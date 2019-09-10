@@ -27,11 +27,11 @@ describe("feedbackStrategies", () => {
     });
 
     describe("Blurred", () => {
-      it("returns true when the field is touched", () => {
+      it("returns true when the field is blurred", () => {
         // $FlowFixMe
         expect(FeedbackStrategies.Blurred(null, {blurred: true})).toBe(true);
       });
-      it("returns false when the field is not touched", () => {
+      it("returns false when the field is not blurred", () => {
         // $FlowFixMe
         expect(FeedbackStrategies.Blurred(null, {blurred: false})).toBe(false);
       });

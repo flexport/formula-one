@@ -170,6 +170,7 @@ export default class ObjectField<T: {}> extends React.Component<
         {this.props.children(links, {
           touched: getExtras(formState).meta.touched,
           changed: getExtras(formState).meta.changed,
+          blurred: getExtras(formState).meta.blurred,
           shouldShowErrors: shouldShowError(getExtras(formState).meta),
           unfilteredErrors: flatRootErrors(formState),
           asyncValidationInFlight: false, // no validations on Form

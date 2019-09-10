@@ -310,7 +310,7 @@ Example:
 
 ### Custom changes
 
-Sometimes a change in one field has to be reflected in another field. `<ObjectField>` and `<ArrayField>` have a prop `customChange` to allow this. It will be called when a child Field changes, and by returning a non-null result you can override the whole Currently, no metadata is preserved (all fields are marked **changed**, **touched**, and not **succeeded**) if a `customChange` function is used.
+Sometimes a change in one field has to be reflected in another field. `<ObjectField>` and `<ArrayField>` have a prop `customChange` to allow this. It will be called when a child Field changes, and by returning a non-null result you can override the whole Currently, no metadata is preserved (all fields are marked **changed**, **blurred**, and **touched**) if a `customChange` function is used.
 
 The API is:
 
@@ -441,6 +441,7 @@ Additional information is available in an object which is the last argument to t
 | ----------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | touched                 | `boolean`                | Whether the field has been touched (blurred or changed)                                                                                                                                    |
 | changed                 | `boolean`                | Whether the field has been changed                                                                                                                                                         |
+| blurred                 | `boolean`                | Whether the field has been blurred                                                                                                                                                         |
 | shouldShowErrors        | `boolean`                | Whether errors should be shown according to the current feedback strategy                                                                                                                  |
 | unfilteredErrors        | `$ReadOnlyArray<string>` | All validation errors for the current field. (This differs from the `errors` argument in `<Field>`, since the `errors` argument in `<Field>` will be empty if `shouldShowErrors` is false) |
 | valid                   | `boolean`                | Whether the field (and its children) pass their validations (NOTE: only client errors are considered!)                                                                                     |

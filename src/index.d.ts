@@ -27,6 +27,7 @@ export type FieldLink<T> = {__type__: "FieldLink"};
 export interface AdditionalRenderInfo<T> {
   touched: boolean;
   changed: boolean;
+  blurred: boolean;
   shouldShowErrors: boolean;
   unfilteredErrors: ReadonlyArray<string>;
   valid: boolean;
@@ -34,12 +35,16 @@ export interface AdditionalRenderInfo<T> {
   value: T;
 }
 
-export type SubmitTips = {valid: {client: boolean, external: boolean}};
+export type SubmitTips = {valid: {client: boolean; external: boolean}};
 
 export interface FormProps<T, ExtraSubmitData> {
   initialValue: T;
   feedbackStrategy?: FeedbackStrategy;
-  onSubmit?: (value: T, extraData: ExtraSubmitData, submitTips: SubmitTips) => void;
+  onSubmit?: (
+    value: T,
+    extraData: ExtraSubmitData,
+    submitTips: SubmitTips
+  ) => void;
   onChange?: (value: T) => void;
   onValidation?: (valid: boolean) => void;
   externalErrors?: ExternalErrors;

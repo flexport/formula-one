@@ -49,6 +49,7 @@ function expectMetaTouched(meta, value) {
     expect.objectContaining({
       touched: value,
       changed: value,
+      blurred: value,
     })
   );
 }
@@ -887,6 +888,7 @@ describe("Form", () => {
         expect.objectContaining({
           touched: false,
           changed: false,
+          blurred: false,
           shouldShowErrors: false,
           unfilteredErrors: expect.arrayContaining([
             "External error",

@@ -95,6 +95,7 @@ describe("ArrayField", () => {
         expect.objectContaining({
           touched: false,
           changed: false,
+          blurred: false,
           shouldShowErrors: expect.anything(),
           unfilteredErrors: expect.arrayContaining([
             "An external error",
@@ -195,6 +196,7 @@ describe("ArrayField", () => {
       expect(newArrayTree.data.meta).toMatchObject({
         touched: true,
         changed: false,
+        blurred: true,
       });
       expect(newArrayTree.children[0]).toBe(newElementTree);
     });
