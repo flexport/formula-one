@@ -1,5 +1,31 @@
 # Changelog
 
+### v0.9.3
+
+#### Bug fixes
+
+- Fix a bug which caused validations to receive incorrect data when `Field` elements were reused with different links.
+- Fix a bug which caused `customChange` to not be called when the array mutators (`addField`, `addFields`, `removeField`, `filterFields`, `modifyFields`, and `moveField`) were used.
+
+#### New features
+
+- Add `Blurred`, a new `FeedbackStrategy` which shows errors after a field has been blurred.
+- Add `blurred: boolean` to the extra info passed to `Field` and `Form` render functions.
+- Add a third parameter to `<Form>`'s `onSubmit` prop. The new API is:
+
+  ```js
+  // ExtraSubmitData is the type of the argument of `onSubmit` in your form.
+  type SubmitTips = {valid: {client: boolean, external: boolean}};
+
+  onSubmit: (T, ExtraSubmitData, SubmitTips) => void,
+  ```
+
+  This new parameter makes it easier to handle form submissions when the form validations are failing.
+
+#### Other
+
+- Bump internal Flow version to 0.106.3.
+
 ### v0.9.2
 
 - Add TypeScript type definitions! 🎉
