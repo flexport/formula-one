@@ -1,6 +1,7 @@
 // @flow strict
 import {setEq} from "./utils/set";
 import invariant from "./utils/invariant";
+import {zip} from "./utils/array";
 
 export type Tree<T> =
   | {
@@ -34,6 +35,21 @@ export type Direction =
   | {type: "object", key: string}
   | {type: "array", index: number};
 export type Path = Array<Direction>;
+
+function directionEqual(a: Direction, b: Direction): boolean {
+  if (a.type === "object" && b.type === "object") {
+    return a.key === b.key;
+  }
+  if (a.type === "array" && b.type === "array") {
+    return a.index === b.index;
+  }
+  return false;
+}
+export function pathEqual(a: Path, b: Path): boolean {
+  return zip(a, b).every(([l, r]: [Direction, Direction]) =>
+    directionEqual(l, r)
+  );
+}
 
 export function pathFromPathString(pathString: string): Path {
   if (pathString[0] !== "/") {
