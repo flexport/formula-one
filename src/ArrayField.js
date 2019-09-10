@@ -42,7 +42,7 @@ import {
   flatRootErrors,
   isValid,
 } from "./formState";
-import type {Path} from "./tree";
+import {pathEqual, type Path} from "./tree";
 import alwaysValid from "./alwaysValid";
 
 type ToFieldLink = <T>(T) => FieldLink<T>;
@@ -108,8 +108,17 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     );
   }
 
-  componentDidUpdate() {
-    this.validationFnOps.replace(this.props.validation);
+  componentDidUpdate(prevProps: Props<E>) {
+    if (!pathEqual(prevProps.link.path, this.props.link.path)) {
+      this.validationFnOps.unregister();
+      this.validationFnOps = this.context.registerValidation(
+        this.props.link.path,
+        this.props.validation
+      );
+    } else {
+      // This is a noop if the function hasn't changed
+      this.validationFnOps.replace(this.props.validation);
+    }
   }
 
   componentWillUnmount() {

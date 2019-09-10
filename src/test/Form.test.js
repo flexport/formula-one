@@ -319,6 +319,100 @@ describe("Form", () => {
       errors = link.formState[1].data.errors.client;
       expect(errors).toEqual(["error 2"]);
     });
+
+    it("doesn't break when elements are reused", () => {
+      const objectValidation0 = jest.fn(() => []);
+      const objectValidation1 = jest.fn(() => []);
+      const arrayValidation0 = jest.fn(() => []);
+      const arrayValidation1 = jest.fn(() => []);
+
+      const initialValue = {
+        o: {
+          a: "alpha",
+          b: "beta",
+        },
+        a: ["zach", "desmond"],
+        f: "theseus", // marker field
+      };
+      const otherValue = {
+        o: {
+          a: "gamma",
+          b: "delta",
+        },
+        a: ["bryan", "kaye"],
+        f: "minotaur",
+      };
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={initialValue}>
+          {link => (
+            <ObjectField link={link} customChange={() => otherValue}>
+              {(links, {value}) => (
+                <>
+                  <ObjectField link={links.o}>
+                    {links =>
+                      value.f === "theseus" ? (
+                        <TestField
+                          link={links.a}
+                          validation={objectValidation0}
+                          key="reuse"
+                        />
+                      ) : (
+                        <TestField
+                          link={links.b}
+                          validation={objectValidation1}
+                          key="reuse"
+                        />
+                      )
+                    }
+                  </ObjectField>
+                  <ArrayField link={links.a}>
+                    {links =>
+                      value.f === "theseus" ? (
+                        <TestField
+                          link={links[0]}
+                          validation={arrayValidation0}
+                          key="reuse"
+                        />
+                      ) : (
+                        <TestField
+                          link={links[1]}
+                          validation={arrayValidation1}
+                          key="reuse"
+                        />
+                      )
+                    }
+                  </ArrayField>
+                  <TestField link={links.f} />
+                </>
+              )}
+            </ObjectField>
+          )}
+        </Form>
+      );
+
+      expect(objectValidation0).toHaveBeenCalledTimes(1);
+      expect(objectValidation0).toHaveBeenCalledWith("alpha");
+      expect(arrayValidation0).toHaveBeenCalledTimes(1);
+      expect(arrayValidation0).toHaveBeenCalledWith("zach");
+      expect(objectValidation1).toHaveBeenCalledTimes(0);
+      expect(arrayValidation1).toHaveBeenCalledTimes(0);
+
+      objectValidation0.mockClear();
+      arrayValidation0.mockClear();
+
+      renderer.root.findAllByType(TestInput)[2].instance.change("foo");
+
+      // TODO(zgotsch): If we instead change the first TestField, this first
+      //   validation gets called once on the way up. We would prefer that this
+      //   doesn't happen.
+      expect(objectValidation0).toHaveBeenCalledTimes(0);
+      expect(arrayValidation0).toHaveBeenCalledTimes(0);
+      expect(objectValidation1).toHaveBeenCalledTimes(1);
+      expect(objectValidation1).toHaveBeenCalledWith("delta");
+      expect(arrayValidation1).toHaveBeenCalledTimes(1);
+      expect(arrayValidation1).toHaveBeenCalledWith("kaye");
+    });
   });
 
   describe("Form manages form state", () => {

@@ -11,6 +11,7 @@ import {
 } from "./Form";
 import {setExtrasBlurred, getExtras, isValid} from "./formState";
 import alwaysValid from "./alwaysValid";
+import {pathEqual} from "./tree";
 
 type Props<T> = {|
   +link: FieldLink<T>,
@@ -51,8 +52,17 @@ export default class Field<T> extends React.Component<Props<T>> {
     );
   }
 
-  componentDidUpdate() {
-    this.validationFnOps.replace(this.props.validation);
+  componentDidUpdate(prevProps: Props<T>) {
+    if (!pathEqual(prevProps.link.path, this.props.link.path)) {
+      this.validationFnOps.unregister();
+      this.validationFnOps = this.context.registerValidation(
+        this.props.link.path,
+        this.props.validation
+      );
+    } else {
+      // This is a noop if the function hasn't changed
+      this.validationFnOps.replace(this.props.validation);
+    }
   }
 
   componentWillUnmount() {
