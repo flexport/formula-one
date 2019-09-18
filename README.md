@@ -162,8 +162,8 @@ These simple strategies can be combined by using the `and`, `or`, and `not` func
 
 ```js
 import {FeedbackStrategies} from "formula-one";
-const {Changed, Submitted, or} = FeedbackStrategies;
-const myStrategy = or(Changed, Submitted);
+const {Changed, Blurred, Submitted, or, and} = FeedbackStrategies;
+const strategy = or(and(Changed, Blurred), Submitted);
 ```
 
 ### Multiple validations for a single `<Field>`
