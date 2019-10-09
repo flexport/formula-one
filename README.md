@@ -530,17 +530,19 @@ class MyExternalButtonExample extends React.Component<Props> {
   }
 
   render() {
-    <div>
-      <Form
-        ref={f => {
-          this.form = f;
-        }}
-        onSubmit={handleSubmit}
-      >
-        {link => <UserField link={link} />}
-      </Form>
-      <button onClick={this.handleSubmitClick}>Submit</button>
-    </div>;
+    return (
+      <div>
+        <Form
+          ref={f => {
+            this.form = f;
+          }}
+          onSubmit={handleSubmit}
+        >
+          {link => <UserField link={link} />}
+        </Form>
+        <button onClick={this.handleSubmitClick}>Submit</button>
+      </div>
+    );
   }
 }
 ```
@@ -548,3 +550,9 @@ class MyExternalButtonExample extends React.Component<Props> {
 <!-- #### Nested forms -->
 
 <!-- #### Disjoint union -->
+
+## Frequently Asked Questions
+
+### Is it possible to reset a form to a new initial state?
+
+Normally, after the initial render, a `<Form>` component will ignore changes to its `initialState` prop. This is necessary because the `<Form>` component tracks metadata in addition to the any updates to the value of the form, and it must maintain that data as the user edits the form. If you want to start over with a new initial state and count all fields as unchanged and unblurred, you can provide a `key` prop to your `<Form>`. When this `key` changes, React will discard the state of your form and `<Form>` will be initialized with the provided `initialState`.
