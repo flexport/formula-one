@@ -1,5 +1,9 @@
 # Changelog
 
+### v0.9.4
+
+- Bump some dependency versions
+
 ### v0.9.3
 
 #### Bug fixes
