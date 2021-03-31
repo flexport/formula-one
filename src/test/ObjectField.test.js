@@ -32,12 +32,12 @@ describe("ObjectField", () => {
       const formState = mockFormState(formStateInner);
       const link: FieldLink<TestObject> = mockLink(formState);
 
-      // $FlowExpectedError
+      // $FlowExpectedError[incompatible-type]
       <ObjectField link={link} validation={(_e: empty) => []}>
         {() => null}
       </ObjectField>;
 
-      // $FlowExpectedError
+      // $FlowExpectedError[prop-missing]
       <ObjectField link={link} validation={(_e: {|string: string|}) => []}>
         {() => null}
       </ObjectField>;
@@ -98,7 +98,7 @@ describe("ObjectField", () => {
 
     it("Passes additional information to its render function", () => {
       const formState = mockFormState({inner: "value"});
-      // $FlowFixMe
+      // $FlowFixMe[incompatible-use]
       formState[1].data.errors = {
         external: ["An external error"],
         client: ["A client error"],
@@ -163,7 +163,7 @@ describe("ObjectField", () => {
       const link: FieldLink<TestObject> = mockLink(formState);
 
       <ObjectField link={link}>
-        {/* $FlowExpectedError */}
+        {/* $FlowExpectedError[incompatible-type] */}
         {(links: empty) => {
           console.log(links);
           return null;
@@ -171,7 +171,7 @@ describe("ObjectField", () => {
       </ObjectField>;
 
       <ObjectField link={link}>
-        {/* $FlowExpectedError */}
+        {/* $FlowExpectedError[prop-missing] */}
         {(links: {|string: FieldLink<string>|}) => {
           console.log(links);
           return null;

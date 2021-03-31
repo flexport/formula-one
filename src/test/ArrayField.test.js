@@ -16,7 +16,7 @@ describe("ArrayField", () => {
       const formState = mockFormState(["one", "two", "three"]);
       const link = mockLink(formState);
 
-      // $FlowExpectedError
+      // $FlowExpectedError[incompatible-type]
       <ArrayField link={link} validation={(_e: empty) => []}>
         {() => null}
       </ArrayField>;
@@ -77,7 +77,7 @@ describe("ArrayField", () => {
 
     it("Passes additional information to its render function", () => {
       const formState = mockFormState(["value"]);
-      // $FlowFixMe
+      // $FlowFixMe[incompatible-use]
       formState[1].data.errors = {
         external: ["An external error"],
         client: ["A client error"],
@@ -128,7 +128,7 @@ describe("ArrayField", () => {
       const link = mockLink(formState);
 
       <ArrayField link={link}>
-        {/* $FlowExpectedError */}
+        {/* $FlowExpectedError[incompatible-type] */}
         {(links: empty) => {
           console.log(links);
           return null;

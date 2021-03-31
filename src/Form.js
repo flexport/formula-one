@@ -349,7 +349,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
 > {
   static defaultProps: {|
     externalErrors: null,
-    feedbackStrategy: () => $FlowFixMe,
+    feedbackStrategy: () => boolean,
     onChange: () => void,
     onSubmit: () => void,
     onValidation: () => void,

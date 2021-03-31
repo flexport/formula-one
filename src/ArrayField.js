@@ -93,7 +93,7 @@ function makeLinks<E>(
 }
 
 export default class ArrayField<E> extends React.Component<Props<E>, void> {
-  static defaultProps: {|validation: <T>(_x: T) => Array<$FlowFixMe>|} = {
+  static defaultProps: {|validation: <T>(_x: T) => Array<string>|} = {
     validation: alwaysValid,
   };
   static contextType: React.Context<FormContextPayload<mixed>> = FormContext;

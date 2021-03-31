@@ -58,7 +58,7 @@ export function shapePath<T>(data: T, path: Path): null | ShapedPath<T> {
     firstPart.type === "object" &&
     Object.hasOwnProperty.call(data, firstPart.key)
   ) {
-    // $FlowFixMe: This is safe
+    // $FlowFixMe[incompatible-use]: This is safe
     const restPath = shapePath(data[firstPart.key], restParts);
     if (restPath === null) {
       return null;
@@ -172,7 +172,7 @@ export function updateAtPath<T, Node>(
       updater,
       tree.children[firstStep.index]
     );
-    // $FlowFixMe(zach): I think this is safe, might need GADTs for the type checker to understand why
+    // $FlowFixMe[incompatible-return](zach): I think this is safe, might need GADTs for the type checker to understand why
     return dangerouslyReplaceArrayChild(firstStep.index, newChild, tree);
   }
   if (tree.type === "object") {
@@ -186,7 +186,7 @@ export function updateAtPath<T, Node>(
       `Tried to take path key ${firstStep.key} but it isn't present on object in tree`
     );
     const newChild = updateAtPath(restStep, updater, nextTree);
-    // $FlowFixMe(zach): I think this is safe, might need GADTs for the type checker to understand why
+    // $FlowFixMe[incompatible-return](zach): I think this is safe, might need GADTs for the type checker to understand why
     return dangerouslyReplaceObjectChild(firstStep.key, newChild, tree);
   }
   throw new Error("unreachable");

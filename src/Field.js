@@ -37,7 +37,7 @@ function getErrors(errors: Err) {
 }
 
 export default class Field<T> extends React.Component<Props<T>> {
-  static defaultProps: {|validation: <T>(_x: T) => $FlowFixMe|} = {
+  static defaultProps: {|validation: <T>(_x: T) => Array<string>|} = {
     validation: alwaysValid,
   };
   static contextType: React.Context<FormContextPayload<mixed>> = FormContext;
@@ -83,7 +83,7 @@ export default class Field<T> extends React.Component<Props<T>> {
     onChange(newFormState);
   };
 
-  onBlur: (() => void) = () => {
+  onBlur: () => void = () => {
     const [_, tree] = this.props.link.formState;
 
     this.props.link.onBlur(

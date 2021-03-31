@@ -78,7 +78,7 @@ export default class ObjectField<T: {}> extends React.Component<
   static contextType: React.Context<FormContextPayload<mixed>> = FormContext;
   context: FormContextPayload<T>;
   static _contextType: React.Context<FormContextPayload<mixed>> = FormContext;
-  static defaultProps: {|validation: <T>(_x: T) => $FlowFixMe|} = {
+  static defaultProps: {|validation: <T>(_x: T) => Array<string>|} = {
     validation: alwaysValid,
   };
 
