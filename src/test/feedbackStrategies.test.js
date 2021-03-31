@@ -17,33 +17,39 @@ describe("feedbackStrategies", () => {
 
     describe("Touched", () => {
       it("returns true when the field is touched", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
+        // $FlowFixMe[incompatible-call]
         expect(FeedbackStrategies.Touched(null, {touched: true})).toBe(true);
       });
       it("returns false when the field is not touched", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
+        // $FlowFixMe[incompatible-call]
         expect(FeedbackStrategies.Touched(null, {touched: false})).toBe(false);
       });
     });
 
     describe("Blurred", () => {
       it("returns true when the field is blurred", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
+        // $FlowFixMe[incompatible-call]
         expect(FeedbackStrategies.Blurred(null, {blurred: true})).toBe(true);
       });
       it("returns false when the field is not blurred", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
+        // $FlowFixMe[incompatible-call]
         expect(FeedbackStrategies.Blurred(null, {blurred: false})).toBe(false);
       });
     });
 
     describe("Changed", () => {
       it("returns true when the field is changed", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
+        // $FlowFixMe[incompatible-call]
         expect(FeedbackStrategies.Changed(null, {changed: true})).toBe(true);
       });
       it("returns false when the field is not changed", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
+        // $FlowFixMe[incompatible-call]
         expect(FeedbackStrategies.Changed(null, {changed: false})).toBe(false);
       });
     });
@@ -51,13 +57,15 @@ describe("feedbackStrategies", () => {
     describe("ClientValidationSucceeded", () => {
       it("returns true when the field has passed client validations in the past", () => {
         expect(
-          // $FlowFixMe
+          // $FlowFixMe[prop-missing]
+          // $FlowFixMe[incompatible-call]
           FeedbackStrategies.ClientValidationSucceeded(null, {succeeded: true})
         ).toBe(true);
       });
       it("returns false when the field has not passed client validations in the past", () => {
         expect(
-          // $FlowFixMe
+          // $FlowFixMe[prop-missing]
+          // $FlowFixMe[incompatible-call]
           FeedbackStrategies.ClientValidationSucceeded(null, {succeeded: false})
         ).toBe(false);
       });
@@ -65,22 +73,22 @@ describe("feedbackStrategies", () => {
 
     describe("Pristine", () => {
       it("returns true when the form is pristine", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
         expect(FeedbackStrategies.Pristine({pristine: true})).toBe(true);
       });
       it("returns false when the form is not pristine", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
         expect(FeedbackStrategies.Pristine({pristine: false})).toBe(false);
       });
     });
 
     describe("Submitted", () => {
       it("returns true when the form is submitted", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
         expect(FeedbackStrategies.Submitted({submitted: true})).toBe(true);
       });
       it("returns false when the form is not submitted", () => {
-        // $FlowFixMe
+        // $FlowFixMe[prop-missing]
         expect(FeedbackStrategies.Submitted({submitted: false})).toBe(false);
       });
     });
@@ -91,7 +99,7 @@ describe("feedbackStrategies", () => {
     const f: FeedbackStrategy = () => false;
 
     function callStrategy(strategy: FeedbackStrategy) {
-      // $FlowFixMe
+      // $FlowFixMe[incompatible-call]
       return strategy();
     }
 

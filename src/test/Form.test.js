@@ -1139,13 +1139,12 @@ describe("Form", () => {
   it("Enforces types on onSubmit", () => {
     const onSubmit: (value: number, extra: "extra") => void = () => {};
     TestRenderer.create(
+      // $FlowExpectedError[incompatible-type]
       <Form initialValue={1} onSubmit={onSubmit}>
         {(_, onSubmit) => (
           <button
             onClick={() => {
-              // $ExpectError
               onSubmit();
-              // $ExpectError
               onSubmit("hello");
               onSubmit("extra");
             }}

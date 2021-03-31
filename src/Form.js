@@ -50,7 +50,8 @@ type ValidationMap = Map<EncodedPath, Map<FieldId, Validation<mixed>>>;
 type ExternalErrors = null | {+[path: string]: $ReadOnlyArray<string>};
 type SubmitTips = {valid: {client: boolean, external: boolean}};
 
-const noOps = {
+// flowlint-next-line unclear-type:off
+const noOps: {unregister: () => void, replace: any => void} = {
   unregister() {},
   replace() {},
 };
@@ -346,7 +347,13 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   Props<T, ExtraSubmitData>,
   State<T>
 > {
-  static defaultProps = {
+  static defaultProps: {|
+    externalErrors: null,
+    feedbackStrategy: () => boolean,
+    onChange: () => void,
+    onSubmit: () => void,
+    onValidation: () => void,
+  |} = {
     onChange: () => {},
     onSubmit: () => {},
     onValidation: () => {},
@@ -357,7 +364,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   static getDerivedStateFromProps(
     props: Props<T, ExtraSubmitData>,
     state: State<T>
-  ) {
+  ): null | {|formState: FormState<T>, oldExternalErrors: ExternalErrors|} {
     if (props.externalErrors !== state.oldExternalErrors) {
       const newTree = applyExternalErrorsToFormState<T>(
         props.externalErrors,
@@ -372,7 +379,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   }
 
   validations: ValidationMap;
-  initialValidationComplete = false;
+  initialValidationComplete: boolean = false;
   pendingValidationPath: null | Path = null;
 
   constructor(props: Props<T, ExtraSubmitData>) {
@@ -469,7 +476,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
    * Keeps validation errors from becoming stale when validation functions of
    * children change.
    */
-  recomputeErrorsAtPathAndRender = (path: Path) => {
+  recomputeErrorsAtPathAndRender: (path: Path) => void = (path: Path) => {
     this.setState(({formState: [rootValue, tree]}) => {
       const value = getValueAtPath(path, rootValue);
       const errors = validateAtPath(path, value, this.validations);
@@ -488,7 +495,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     });
   };
 
-  handleRegisterValidation = <NodeT>(
+  handleRegisterValidation: <NodeT>(
+    path: Path,
+    fn: (NodeT) => Array<string>
+  ) => ValidationOps<NodeT> = <NodeT>(
     path: Path,
     fn: NodeT => Array<string>
   ): ValidationOps<NodeT> => {
@@ -519,7 +529,11 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     };
   };
 
-  replaceValidation = <NodeT>(
+  replaceValidation: <NodeT>(
+    path: Path,
+    fieldId: FieldId,
+    fn: (NodeT) => Array<string>
+  ) => void = <NodeT>(
     path: Path,
     fieldId: FieldId,
     fn: NodeT => Array<string>
@@ -563,7 +577,10 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     this.recomputeErrorsAtPathAndRender(path);
   };
 
-  unregisterValidation = (path: Path, fieldId: FieldId) => {
+  unregisterValidation: (path: Path, fieldId: FieldId) => void = (
+    path: Path,
+    fieldId: FieldId
+  ) => {
     const encodedPath = encodePath(path);
     const map = this.validations.get(encodedPath);
     invariant(map != null, "Couldn't find handler map during unregister");
@@ -580,7 +597,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     this.recomputeErrorsAtPathAndRender(path);
   };
 
-  render() {
+  render(): React.Node {
     const {formState} = this.state;
     const metaForm = {
       pristine: this.state.pristine,

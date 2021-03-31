@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
-import {type JestMockT} from "jest";
 import {FormContext} from "../Form";
 import ObjectField from "../ObjectField";
 import Form from "../Form";
@@ -33,12 +32,12 @@ describe("ObjectField", () => {
       const formState = mockFormState(formStateInner);
       const link: FieldLink<TestObject> = mockLink(formState);
 
-      // $ExpectError
+      // $FlowExpectedError[incompatible-type]
       <ObjectField link={link} validation={(_e: empty) => []}>
         {() => null}
       </ObjectField>;
 
-      // $ExpectError
+      // $FlowExpectedError[prop-missing]
       <ObjectField link={link} validation={(_e: {|string: string|}) => []}>
         {() => null}
       </ObjectField>;
@@ -99,7 +98,7 @@ describe("ObjectField", () => {
 
     it("Passes additional information to its render function", () => {
       const formState = mockFormState({inner: "value"});
-      // $FlowFixMe
+      // $FlowFixMe[incompatible-use]
       formState[1].data.errors = {
         external: ["An external error"],
         client: ["A client error"],
@@ -164,7 +163,7 @@ describe("ObjectField", () => {
       const link: FieldLink<TestObject> = mockLink(formState);
 
       <ObjectField link={link}>
-        {/* $ExpectError */}
+        {/* $FlowExpectedError[incompatible-type] */}
         {(links: empty) => {
           console.log(links);
           return null;
@@ -172,7 +171,7 @@ describe("ObjectField", () => {
       </ObjectField>;
 
       <ObjectField link={link}>
-        {/* $ExpectError */}
+        {/* $FlowExpectedError[prop-missing] */}
         {(links: {|string: FieldLink<string>|}) => {
           console.log(links);
           return null;
@@ -242,7 +241,7 @@ describe("ObjectField", () => {
 
       expect(link.onBlur).toHaveBeenCalled();
 
-      const linkOnBlur: JestMockT = link.onBlur;
+      const linkOnBlur: any = link.onBlur;
       const newObjectTree = linkOnBlur.mock.calls[0][0];
       expect(newObjectTree.children.number).toBe(newChildTree);
       expect(newObjectTree.data.meta).toMatchObject({

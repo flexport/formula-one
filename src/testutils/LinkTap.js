@@ -30,7 +30,7 @@ export default class LinkTap<T> extends React.Component<Props<T>> {
     this.props.link.onBlur(newMeta);
   };
 
-  render() {
+  render(): React.Node {
     const {link} = this.props;
     const tappedLink: FieldLink<T> = {
       path: link.path,

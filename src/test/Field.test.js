@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
-import {type JestMockT} from "jest";
 
 import Field from "../Field";
 import {type FieldLink} from "../types";
@@ -16,7 +15,7 @@ describe("Field", () => {
     const formState = mockFormState("Hello world.");
     const link = mockLink(formState);
 
-    // $ExpectError
+    // $FlowExpectedError[incompatible-type]
     <Field link={link} validation={(_e: empty) => []}>
       {() => null}
     </Field>;
@@ -117,7 +116,7 @@ describe("Field", () => {
     inner.instance.blur();
     expect(link.onBlur).toHaveBeenCalledTimes(1);
 
-    const linkOnBlur: JestMockT = link.onBlur;
+    const linkOnBlur: any = link.onBlur;
     const tree = linkOnBlur.mock.calls[0][0];
     expect(tree.data).toMatchObject({
       meta: {
@@ -160,7 +159,7 @@ describe("Field", () => {
     const link = mockLink(formState);
 
     <Field link={link}>
-      {/* $ExpectError */}
+      {/* $FlowExpectedError[incompatible-type] */}
       {(_value: empty) => null}
     </Field>;
 
@@ -172,11 +171,11 @@ describe("Field", () => {
     const link: FieldLink<string> = mockLink(formState);
 
     <Field link={link}>
-      {/* $ExpectError */}
+      {/* $FlowExpectedError[incompatible-type] */}
       {(_value, _errors, _onChange: empty) => null}
     </Field>;
 
-    // $ExpectError
+    // $FlowExpectedError[incompatible-type-arg]
     <Field link={link}>
       {(_value, _errors, _onChange: number => void) => null}
     </Field>;
@@ -188,7 +187,7 @@ describe("Field", () => {
 
   it("Passes additional information to its render function", () => {
     const formState = mockFormState(10);
-    // $FlowFixMe
+    // $FlowFixMe[incompatible-use]
     formState[1].data.errors = {
       external: ["An external error"],
       client: ["A client error"],
