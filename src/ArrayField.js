@@ -93,10 +93,10 @@ function makeLinks<E>(
 }
 
 export default class ArrayField<E> extends React.Component<Props<E>, void> {
-  static defaultProps = {
+  static defaultProps: {|validation: <T>(_x: T) => Array<$FlowFixMe>|} = {
     validation: alwaysValid,
   };
-  static contextType = FormContext;
+  static contextType: React.Context<FormContextPayload<mixed>> = FormContext;
   context: FormContextPayload<Array<E>>;
 
   validationFnOps: ValidationOps<Array<E>> = validationFnNoOps();
@@ -308,7 +308,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     }
   };
 
-  _removeChildField = (index: number) => {
+  _removeChildField: (index: number) => void = (index: number) => {
     const [oldValue, oldTree] = this.props.link.formState;
 
     const newValue = removeAt(index, oldValue);
@@ -326,7 +326,10 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     }
   };
 
-  _moveChildField = (from: number, to: number) => {
+  _moveChildField: (from: number, to: number) => void = (
+    from: number,
+    to: number
+  ) => {
     const [oldValue, oldTree] = this.props.link.formState;
 
     const newValue = moveFromTo(from, to, oldValue);
@@ -359,7 +362,7 @@ export default class ArrayField<E> extends React.Component<Props<E>, void> {
     this._validateThenApplyCustomChange([customValue, newTree]);
   }
 
-  render() {
+  render(): React.Node {
     const {formState, path} = this.props.link;
     const {shouldShowError} = this.context;
 

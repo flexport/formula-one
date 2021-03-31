@@ -25,7 +25,7 @@ type Props<T> = {|
     flattened: Array<string>,
   }) => React.Node,
 |};
-export default function ErrorsHelper<T>(props: Props<T>) {
+export default function ErrorsHelper<T>(props: Props<T>): React.Node {
   const {errors, meta} = getExtras(props.link.formState);
   const flattened = flattenErrors(errors);
   const formContext = React.useContext(FormContext);

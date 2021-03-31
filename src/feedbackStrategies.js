@@ -4,25 +4,25 @@ import type {MetaForm, MetaField} from "./types";
 export type FeedbackStrategy = (MetaForm, MetaField) => boolean;
 
 const strategies = {
-  Always() {
+  Always(): boolean {
     return true;
   },
-  Touched(metaForm: MetaForm, metaField: MetaField) {
+  Touched(metaForm: MetaForm, metaField: MetaField): boolean {
     return metaField.touched;
   },
-  Blurred(metaForm: MetaForm, metaField: MetaField) {
+  Blurred(metaForm: MetaForm, metaField: MetaField): boolean {
     return metaField.blurred;
   },
-  Changed(metaForm: MetaForm, metaField: MetaField) {
+  Changed(metaForm: MetaForm, metaField: MetaField): boolean {
     return metaField.changed;
   },
-  ClientValidationSucceeded(metaForm: MetaForm, metaField: MetaField) {
+  ClientValidationSucceeded(metaForm: MetaForm, metaField: MetaField): boolean {
     return metaField.succeeded;
   },
-  Pristine(metaForm: MetaForm) {
+  Pristine(metaForm: MetaForm): boolean {
     return metaForm.pristine;
   },
-  Submitted(metaForm: MetaForm) {
+  Submitted(metaForm: MetaForm): boolean {
     return metaForm.submitted;
   },
 };

@@ -75,10 +75,10 @@ export default class ObjectField<T: {}> extends React.Component<
   Props<T>,
   void
 > {
-  static contextType = FormContext;
+  static contextType: React.Context<FormContextPayload<mixed>> = FormContext;
   context: FormContextPayload<T>;
-  static _contextType = FormContext;
-  static defaultProps = {
+  static _contextType: React.Context<FormContextPayload<mixed>> = FormContext;
+  static defaultProps: {|validation: <T>(_x: T) => $FlowFixMe|} = {
     validation: alwaysValid,
   };
 
@@ -155,7 +155,7 @@ export default class ObjectField<T: {}> extends React.Component<
     );
   };
 
-  render() {
+  render(): React.Node {
     const {formState} = this.props.link;
     const {shouldShowError} = this.context;
 

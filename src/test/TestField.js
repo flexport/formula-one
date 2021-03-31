@@ -18,7 +18,7 @@ export class TestInput extends React.Component<{|
   blur() {
     this.props.onBlur();
   }
-  render() {
+  render(): null {
     return null;
   }
 }
@@ -28,7 +28,7 @@ type Props = {|
   validation?: Validation<string>,
 |};
 
-const TestField = (props: Props) => {
+const TestField = (props: Props): React.Node => {
   const validation = props.validation || alwaysValid;
 
   return (

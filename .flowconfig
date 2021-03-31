@@ -7,8 +7,6 @@
 [lints]
 
 [options]
-suppress_comment=\\(.\\|\n\\)*\\$FlowFixMe
-suppress_comment=\\(.\\|\n\\)*\\$ExpectError
 include_warnings=true
 esproposal.export_star_as=enable
 

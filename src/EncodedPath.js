@@ -12,7 +12,7 @@ import {type Path} from "./tree";
 opaque type EncodedPath = string;
 export type {EncodedPath};
 
-export function startsWith(path: EncodedPath, prefix: EncodedPath) {
+export function startsWith(path: EncodedPath, prefix: EncodedPath): boolean {
   return path.startsWith(prefix);
 }
 

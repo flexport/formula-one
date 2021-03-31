@@ -20,7 +20,7 @@ export default function TestForm({
   registerValidation = () => ({replace: () => {}, unregister: () => {}}),
   applyCustomChangeToTree = (path, formState) => formState,
   applyChangeToNode = (path, formState) => formState,
-}: Props = {}) {
+}: Props = {}): React.Node {
   return (
     <FormContext.Provider
       value={{

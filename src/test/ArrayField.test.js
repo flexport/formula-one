@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import TestRenderer from "react-test-renderer";
-import {type JestMockT} from "jest";
 import Form from "../Form";
 import ArrayField from "../ArrayField";
 import {type FieldLink} from "../types";
@@ -17,7 +16,7 @@ describe("ArrayField", () => {
       const formState = mockFormState(["one", "two", "three"]);
       const link = mockLink(formState);
 
-      // $ExpectError
+      // $FlowExpectedError
       <ArrayField link={link} validation={(_e: empty) => []}>
         {() => null}
       </ArrayField>;
@@ -129,7 +128,7 @@ describe("ArrayField", () => {
       const link = mockLink(formState);
 
       <ArrayField link={link}>
-        {/* $ExpectError */}
+        {/* $FlowExpectedError */}
         {(links: empty) => {
           console.log(links);
           return null;
@@ -191,7 +190,7 @@ describe("ArrayField", () => {
       arrayLinks[0].onBlur(newElementTree);
 
       expect(link.onBlur).toHaveBeenCalled();
-      const linkOnBlur: JestMockT = link.onBlur;
+      const linkOnBlur: any = link.onBlur;
       const newArrayTree = linkOnBlur.mock.calls[0][0];
       expect(newArrayTree.data.meta).toMatchObject({
         touched: true,
