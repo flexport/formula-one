@@ -1,5 +1,10 @@
 # Changelog
 
+### v0.9.5
+
+- Update Flow and other dev dependencies
+- Add React 17 compatibility
+
 ### v0.9.4
 
 - Bump some dependency versions
