@@ -39,6 +39,7 @@ import {
 } from "./EncodedPath";
 import FeedbackStrategies, {type FeedbackStrategy} from "./feedbackStrategies";
 import alwaysValid from "./alwaysValid";
+import Tracer, {type TracerDelegate} from "./tracer";
 
 export type ValidationOps<T> = {
   unregister: () => void,
@@ -330,6 +331,8 @@ type Props<T, ExtraSubmitData> = {|
   +onSubmit: (T, ExtraSubmitData, SubmitTips) => void,
   +onChange: T => void,
   +onValidation: boolean => void,
+  +traceDirty: boolean,
+  +customDirty?: (isDirty: boolean) => boolean,
   +externalErrors: ExternalErrors,
   +children: (
     link: FieldLink<T>,
@@ -359,6 +362,7 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     onValidation: () => {},
     feedbackStrategy: FeedbackStrategies.Always,
     externalErrors: null,
+    traceDirty: false,
   };
 
   static getDerivedStateFromProps(
@@ -381,11 +385,16 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
   validations: ValidationMap;
   initialValidationComplete: boolean = false;
   pendingValidationPath: null | Path = null;
+  traceDelegate: TracerDelegate;
 
   constructor(props: Props<T, ExtraSubmitData>) {
     super(props);
 
     this.validations = new Map();
+
+    if (props.traceDirty) {
+      this.traceDelegate = Tracer.register();
+    }
 
     const formState = applyExternalErrorsToFormState(
       props.externalErrors,
@@ -417,6 +426,18 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
         this.props.onValidation(isValid(this.state.formState));
       }
     );
+  }
+
+  componentDidUpdate() {
+    if (this.traceDelegate) {
+      this.traceDelegate.dirty = this._isDirty();
+    }
+  }
+
+  componentWillUnmount() {
+    if (this.traceDelegate) {
+      Tracer.unregister(this.traceDelegate);
+    }
   }
 
   // Public API: submit from the outside
@@ -470,6 +491,12 @@ export default class Form<T, ExtraSubmitData> extends React.Component<
     this.setState({
       formState: [this.state.formState[0], newTree],
     });
+  };
+
+  _isDirty: () => boolean = () => {
+    const isDirty = !this.state.pristine && !this.state.submitted;
+    const {customDirty} = this.props;
+    return customDirty ? customDirty(isDirty) : isDirty;
   };
 
   /**

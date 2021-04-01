@@ -13,6 +13,7 @@ import {expectLink, mockFormState} from "./tools";
 import TestField, {TestInput} from "./TestField";
 import LinkTap from "../testutils/LinkTap";
 import {forgetShape} from "../shapedTree";
+import Tracer from "../tracer";
 
 type NaughtyProps = {|
   value: string,
@@ -1278,6 +1279,65 @@ describe("Form", () => {
       // commits is constant!
       expect(commits).toBe(1 + 1);
       expect(commits).not.toBe(1 + N);
+    });
+  });
+
+  describe("Tracer", () => {
+    it("registers TracerDelegate when traceDirty equals true", () => {
+      const renderFn = jest.fn(() => null);
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={1} traceDirty={true}>
+          {renderFn}
+        </Form>
+      );
+
+      expect(Tracer.delegates.length).toBe(1);
+      expect(Tracer.isDirty()).toBe(false);
+
+      renderer.unmount();
+
+      expect(Tracer.delegates.length).toBe(0);
+    });
+
+    it("updates dirty after form state changes", () => {
+      const renderFn = jest.fn(link => (
+        <FormContext.Consumer>
+          {() => <TestField link={link} />}
+        </FormContext.Consumer>
+      ));
+
+      const renderer = TestRenderer.create(
+        <Form initialValue={"Hello"} traceDirty={true}>
+          {renderFn}
+        </Form>
+      );
+
+      expect(Tracer.isDirty()).toBe(false);
+
+      const inner = renderer.root.findByType(TestInput);
+      inner.instance.change("World");
+
+      expect(Tracer.isDirty()).toBe(true);
+
+      const linkOnSubmit = renderFn.mock.calls[0][1];
+      linkOnSubmit();
+      // reset isDirty after form submits
+      expect(Tracer.isDirty()).toBe(false);
+    });
+
+    it("customizes isDirty by using customDirty", () => {
+      const renderFn = jest.fn(() => null);
+      const customDirty = jest.fn(() => true);
+
+      TestRenderer.create(
+        <Form initialValue={1} traceDirty={true} customDirty={customDirty}>
+          {renderFn}
+        </Form>
+      );
+
+      expect(Tracer.isDirty()).toBe(true);
+      expect(customDirty).toHaveBeenCalledTimes(1);
     });
   });
 });
